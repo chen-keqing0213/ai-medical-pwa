@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="AI病历助手">
+<meta name="theme-color" content="#2563EB">
+<title>AI 病历草稿助手</title>
+<link rel="manifest" href="/manifest.json">
+<style>
+:root {
+  --primary: #2563EB; --primary-light: #DBEAFE; --bg: #F1F5F9;
+  --card: #FFF; --text: #1E293B; --text2: #64748B; --border: #E2E8F0;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06); --radius: 16px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 15px; color: var(--text); background: var(--bg);
+  padding-bottom: env(safe-area-inset-bottom);
+  -webkit-user-select: none; user-select: none;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, #1E40AF, #2563EB);
+  color: #FFF; padding: 20px 16px; text-align: center;
+  position: sticky; top: 0; z-index: 10;
+}
+.header h1 { font-size: 20px; font-weight: 700; }
+.header .sub { font-size: 13px; opacity: 0.8; margin-top: 4px; }
+.quota-bar { font-size: 13px; margin-top: 10px; background: rgba(255,255,255,0.15); display: inline-block; padding: 5px 16px; border-radius: 20px; }
+.quota-bar b { color: #FDE68A; }
+
+/* Tabs */
+.tabs { display: flex; background: #FFF; border-bottom: 1px solid var(--border); position: sticky; top: 88px; z-index: 9; }
+.tab { flex:1; text-align:center; padding:14px; font-size:14px; font-weight:500; color:var(--text2); border-bottom:2px solid transparent; cursor:pointer; }
+.tab.active { color:var(--primary); border-bottom-color:var(--primary); font-weight:600; }
+
+/* Pages */
+.page { display: none; padding: 16px; }
+.page.active { display: block; }
+
+/* Template card */
+.tpl-card {
+  background: var(--card); border-radius: var(--radius); padding: 20px;
+  margin-bottom: 12px; box-shadow: var(--shadow);
+  border-left: 5px solid var(--primary);
+  cursor: pointer; transition: 0.15s;
+}
+.tpl-card:active { transform: scale(0.98); opacity: 0.8; }
+.tpl-card .name { font-size: 17px; font-weight: 600; }
+.tpl-card .desc { font-size: 13px; color: var(--text2); margin-top: 4px; }
+
+/* Form */
+.fgroup { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.fgroup-title { font-size: 15px; font-weight: 700; color: var(--primary); margin-bottom: 12px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+.field { margin-bottom: 14px; }
+.field:last-child { margin-bottom: 0; }
+.field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--text); }
+.field textarea, .field input {
+  width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 10px;
+  font-size: 14px; line-height: 1.5; background: #FAFAFA; font-family: inherit;
+  -webkit-appearance: none; resize: vertical;
+}
+.field textarea:focus, .field input:focus { border-color: var(--primary); background: #FFF; outline: none; }
+
+/* Voice */
+.voice-bar { margin-bottom: 16px; }
+.voice-btn {
+  width: 100%; padding: 14px; border: 2px dashed var(--border); border-radius: 12px;
+  background: #FFF; color: var(--primary); font-size: 16px; font-weight: 500;
+  text-align: center; cursor: pointer;
+}
+.voice-btn.recording { background: #FEF2F2; border-color: #EF4444; color: #EF4444; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.5 } }
+.voice-preview { margin-top: 10px; padding: 12px; background: #F8FAFC; border-radius: 10px; font-size: 14px; line-height: 1.6; }
+.fill-btn { margin-top: 8px; padding: 8px 16px; background: var(--primary); color: #FFF; border: none; border-radius: 8px; font-size: 13px; }
+
+/* Buttons */
+.btn-primary {
+  display: block; width: 100%; padding: 16px; background: var(--primary); color: #FFF;
+  border: none; border-radius: 12px; font-size: 17px; font-weight: 600;
+  text-align: center; cursor: pointer; margin-top: 8px;
+}
+.btn-primary:active { opacity: 0.85; }
+.btn-primary:disabled { opacity: 0.4; }
+.btn-outline {
+  display: block; width: 100%; padding: 14px; background: #FFF; color: var(--primary);
+  border: 1.5px solid var(--primary); border-radius: 12px; font-size: 15px;
+  font-weight: 500; text-align: center; cursor: pointer; margin-top: 8px;
+}
+
+/* Result */
+.result-card {
+  background: var(--card); border-radius: var(--radius); padding: 20px;
+  box-shadow: var(--shadow); margin-bottom: 16px;
+}
+.result-content { font-size: 15px; line-height: 2; white-space: pre-line; }
+.send-status { text-align: center; padding: 40px 0; }
+.send-status .icon { font-size: 48px; }
+.send-status .msg { font-size: 16px; margin-top: 12px; color: var(--text2); }
+.send-status .success { color: #10B981; font-weight: 600; }
+
+/* History */
+.h-item {
+  background: var(--card); border-radius: var(--radius); padding: 16px;
+  margin-bottom: 10px; box-shadow: var(--shadow);
+}
+.h-item .meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); margin-bottom: 8px; }
+.h-item .preview { font-size: 14px; line-height: 1.6; color: var(--text); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.h-item .btn-row { margin-top: 10px; text-align: right; }
+.h-item .btn-row button {
+  padding: 6px 14px; background: var(--primary-light); color: var(--primary); border: none;
+  border-radius: 6px; font-size: 13px; margin-left: 8px; cursor: pointer;
+}
+.empty { text-align: center; padding: 80px 0; color: var(--text2); font-size: 15px; }
+
+/* Disclaimer */
+.disclaimer { text-align: center; font-size: 12px; color: #94A3B8; padding: 20px; line-height: 1.6; }
+
+/* Toast */
+.toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(0,0,0,0.8); color: #FFF; padding: 12px 24px; border-radius: 10px; font-size: 14px; z-index: 9999; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📋 AI 病历草稿助手</h1>
+  <div class="sub">首次病程记录 · 口述即生成 · 音频传内网</div>
+  <div class="quota-bar">今日剩余 <b id="quotaNum">5</b> 次 · 每日免费5次</div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-page="home">📋 写病历</div>
+  <div class="tab" data-page="result">📄 结果</div>
+  <div class="tab" data-page="history">📝 历史</div>
+</div>
+
+<!-- === HOME PAGE === -->
+<div class="page active" id="page-home">
+  <div class="tpl-card" onclick="startRecord()">
+    <div class="name">📋 首次病程记录</div>
+    <div class="desc">入院8小时内完成 · 病例特点 + 拟诊讨论 + 诊疗计划</div>
+  </div>
+
+  <!-- Voice input -->
+  <div class="voice-bar">
+    <div class="voice-btn" id="voiceBtn" onmousedown="startVoice()" onmouseup="stopVoice()" ontouchstart="startVoice()" ontouchend="stopVoice()">
+      🎤 按住口述病历信息
+    </div>
+    <div class="voice-preview" id="voicePreview" style="display:none;"></div>
+    <button class="fill-btn" id="fillBtn" style="display:none;" onclick="parseVoice()">🤖 AI 解析填入</button>
+  </div>
+
+  <!-- Structured form -->
+  <div id="formArea">
+    <div class="fgroup">
+      <div class="fgroup-title">一、病例特点</div>
+      <div class="field"><label>主诉</label><textarea id="f_chief_complaint" rows="2" placeholder="主要症状/体征 + 持续时间"></textarea></div>
+      <div class="field"><label>现病史</label><textarea id="f_present_illness" rows="3" placeholder="起病情况、症状特点、伴随症状、诊治经过"></textarea></div>
+      <div class="field"><label>既往史</label><textarea id="f_past_history" rows="2" placeholder="既往疾病、手术、过敏史（无特殊写既往体健）"></textarea></div>
+    </div>
+    <div class="fgroup">
+      <div class="fgroup-title">二、体格检查</div>
+      <div class="field"><label>生命体征</label><input id="f_vital_signs" placeholder="T/P/R/BP，如 T36.5℃ P80 R20 BP120/80"></div>
+      <div class="field"><label>重点查体</label><textarea id="f_physical_exam" rows="3" placeholder="阳性体征及有鉴别意义的阴性体征"></textarea></div>
+    </div>
+    <div class="fgroup">
+      <div class="fgroup-title">三、辅助检查</div>
+      <div class="field"><label>辅助检查结果</label><textarea id="f_aux_exam" rows="2" placeholder="入院前已完成的检查，注明机构及检查号"></textarea></div>
+    </div>
+    <div class="fgroup">
+      <div class="fgroup-title">四、拟诊讨论</div>
+      <div class="field"><label>初步诊断</label><textarea id="f_diagnosis" rows="2" placeholder="按主次排列，待查病例列出可能性较大的诊断"></textarea></div>
+      <div class="field"><label>诊断依据</label><textarea id="f_diagnosis_basis" rows="2" placeholder="支持诊断的临床表现、检查结果等"></textarea></div>
+      <div class="field"><label>鉴别诊断</label><textarea id="f_differential" rows="2" placeholder="需要排除的其他可能诊断及依据"></textarea></div>
+    </div>
+    <div class="fgroup">
+      <div class="fgroup-title">五、诊疗计划</div>
+      <div class="field"><label>检查计划</label><textarea id="f_exam_plan" rows="2" placeholder="拟进一步完善的检查项目"></textarea></div>
+      <div class="field"><label>治疗计划</label><textarea id="f_treatment_plan" rows="2" placeholder="药物治疗、手术安排、护理级别等"></textarea></div>
+    </div>
+  </div>
+
+  <button class="btn-primary" id="genBtn" onclick="generate()">✨ 生成首次病程记录</button>
+  <div class="disclaimer">🔒 本工具不收集、不存储患者身份信息<br>请输入去标识化的临床数据</div>
+</div>
+
+<!-- === RESULT PAGE === -->
+<div class="page" id="page-result">
+  <div class="result-card">
+    <div class="result-content" id="resultText"></div>
+  </div>
+  <button class="btn-primary" onclick="sendAudio()">🔊 发送到电脑（接好音频线）</button>
+  <button class="btn-outline" onclick="copyResult()">📋 复制到剪贴板</button>
+  <div class="send-status" id="sendStatus" style="display:none;">
+    <div class="icon">🔊</div>
+    <div class="msg">正在发送声波信号...</div>
+  </div>
+  <div class="disclaimer">⚠ AI生成草稿，请医师审核修改后使用</div>
+</div>
+
+<!-- === HISTORY PAGE === -->
+<div class="page" id="page-history">
+  <div id="historyList"></div>
+  <div class="disclaimer">本地存储，最近100条，不存患者身份信息</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/audio-sender.js"></script>
+<script src="js/templates.js"></script>
+<script>
+// ============ State ============
+const STATE = {
+  currentRecord: '',
+  quota: 5,
+  recording: false,
+  voiceText: '',
+  history: JSON.parse(localStorage.getItem('mcHistory') || '[]'),
+};
+
+// ============ Navigation ============
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', function() {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    this.classList.add('active');
+    document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+    document.getElementById('page-' + this.dataset.page).classList.add('active');
+    if (this.dataset.page === 'history') renderHistory();
+  });
+});
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.tab[data-page="${name}"]`).classList.add('active');
+  document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (name === 'history') renderHistory();
+}
+
+// ============ Toast ============
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// ============ Quota ============
+function updateQuota() {
+  const today = new Date().toDateString();
+  const d = JSON.parse(localStorage.getItem('mcQuota') || '{"date":"","used":0}');
+  if (d.date !== today) { d.date = today; d.used = 0; }
+  STATE.quota = 5 - d.used;
+  document.getElementById('quotaNum').textContent = Math.max(0, STATE.quota);
+}
+function useQuota() {
+  const today = new Date().toDateString();
+  const d = JSON.parse(localStorage.getItem('mcQuota') || '{"date":"","used":0}');
+  if (d.date !== today) { d.date = today; d.used = 0; }
+  d.used++; d.date = today;
+  localStorage.setItem('mcQuota', JSON.stringify(d));
+  updateQuota();
+}
+updateQuota();
+
+// ============ Voice ============
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+
+function startVoice() {
+  if (!SpeechRecognition) { toast('浏览器不支持语音，请手动填写'); return; }
+  STATE.recording = true;
+  document.getElementById('voiceBtn').classList.add('recording');
+  document.getElementById('voiceBtn').textContent = '🔴 聆听中...松手结束';
+
+  if (!recognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = 'zh-CN';
+    recognition.interimResults = true;
+    recognition.continuous = true;
+    recognition.onresult = (e) => {
+      let text = '';
+      for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
+      STATE.voiceText = text;
+      const vp = document.getElementById('voicePreview');
+      vp.style.display = 'block'; vp.textContent = text;
+    };
+    recognition.onerror = (e) => { stopVoice(); toast('语音识别失败'); };
+  }
+  recognition.start();
+}
+
+function stopVoice() {
+  STATE.recording = false;
+  document.getElementById('voiceBtn').classList.remove('recording');
+  document.getElementById('voiceBtn').textContent = '🎤 按住口述病历信息';
+  if (recognition) recognition.stop();
+  if (STATE.voiceText) {
+    document.getElementById('fillBtn').style.display = 'inline-block';
+  }
+}
+
+// Parse voice text → fill form fields using AI
+async function parseVoice() {
+  if (!STATE.voiceText) return;
+  document.getElementById('fillBtn').textContent = '⏳ 解析中...';
+  // Simple keyword-based fill as fallback; in production use the API
+  const text = STATE.voiceText;
+  // Try to match patterns
+  const patterns = [
+    { key: 'chief_complaint', re: /主诉[：:](.+?)(?:现病史|既往|查体|检查|诊断|治疗|$)/ },
+    { key: 'present_illness', re: /现病史[：:](.+?)(?:既往|查体|检查|诊断|治疗|$)/ },
+    { key: 'past_history', re: /既往史[：:](.+?)(?:查体|检查|诊断|治疗|$)/ },
+    { key: 'vital_signs', re: /(?:生命体征|查体)[：:](.+?)(?:检查|诊断|治疗|$)/ },
+  ];
+  for (const p of patterns) {
+    const m = text.match(p.re);
+    if (m && m[1].trim()) document.getElementById('f_' + p.key).value = m[1].trim();
+  }
+  document.getElementById('fillBtn').textContent = '🤖 AI 解析填入';
+  document.getElementById('fillBtn').style.display = 'none';
+  toast('已尝试自动填入，请检查修正');
+}
+
+// ============ Generate ============
+async function generate() {
+  if (STATE.quota <= 0) { toast('今日免费次数已用完，明天自动重置'); return; }
+
+  // Collect fields
+  const keys = ['chief_complaint','present_illness','past_history','vital_signs','physical_exam','aux_exam','diagnosis','diagnosis_basis','differential','exam_plan','treatment_plan'];
+  const fields = {};
+  for (const k of keys) fields[k] = document.getElementById('f_' + k).value.trim();
+  if (!Object.values(fields).some(v => v)) { toast('请至少填写一项信息'); return; }
+
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true; btn.textContent = '⏳ AI生成中...';
+  useQuota();
+
+  const systemPrompt = `你是一名经验丰富的临床医师，请根据以下信息生成一份规范的「首次病程记录」。要求：1.严格使用医学术语，专业准确简洁 2.按病例特点→拟诊讨论→诊疗计划组织 3.符合《病历书写基本规范》 4.阿拉伯数字和24小时制 5.不要出现AI字样 6.缺失信息标记【待补充】`;
+
+  try {
+    // Try Vercel API first, fall back to local deepseek call
+    const API_URL = 'https://ai-medical-api.vercel.app/api/generate';
+    let record;
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ systemPrompt, fields }),
+      });
+      const data = await res.json();
+      record = data.record;
+    } catch {
+      // Fallback: use DeepSeek directly (exposes key in client - DEV ONLY)
+      record = await fallbackGenerate(systemPrompt, fields);
+    }
+
+    STATE.currentRecord = record;
+    document.getElementById('resultText').textContent = record;
+    saveHistory('首次病程记录', fields, record);
+    switchTab('result');
+  } catch (e) {
+    toast('生成失败: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '✨ 生成首次病程记录';
+  }
+}
+
+async function fallbackGenerate(systemPrompt, fields) {
+  // Build summary locally if API is unreachable
+  const labels = {
+    chief_complaint:'主诉',present_illness:'现病史',past_history:'既往史',
+    vital_signs:'生命体征',physical_exam:'体格检查',aux_exam:'辅助检查',
+    diagnosis:'初步诊断',diagnosis_basis:'诊断依据',differential:'鉴别诊断',
+    exam_plan:'检查计划',treatment_plan:'治疗计划'
+  };
+  const parts = ['【首次病程记录 - 脱机草稿】','','一、病例特点'];
+  if(fields.chief_complaint) parts.push('主诉：'+fields.chief_complaint);
+  if(fields.present_illness) parts.push('现病史：'+fields.present_illness);
+  if(fields.past_history) parts.push('既往史：'+fields.past_history);
+  if(fields.vital_signs) parts.push('生命体征：'+fields.vital_signs);
+  if(fields.physical_exam) parts.push('体格检查：'+fields.physical_exam);
+  if(fields.aux_exam) parts.push('辅助检查：'+fields.aux_exam);
+  parts.push('','二、拟诊讨论');
+  if(fields.diagnosis) parts.push('初步诊断：'+fields.diagnosis);
+  if(fields.diagnosis_basis) parts.push('诊断依据：'+fields.diagnosis_basis);
+  if(fields.differential) parts.push('鉴别诊断：'+fields.differential);
+  parts.push('','三、诊疗计划');
+  if(fields.exam_plan) parts.push('检查计划：'+fields.exam_plan);
+  if(fields.treatment_plan) parts.push('治疗计划：'+fields.treatment_plan);
+  parts.push('','※ AI生成草稿（脱机模式），请医师审核修改后使用');
+  return parts.join('\n');
+}
+
+// ============ Audio Send ============
+async function sendAudio() {
+  if (!STATE.currentRecord) { toast('没有可发送的内容'); return; }
+  document.getElementById('sendStatus').style.display = 'block';
+  try {
+    await Sender.send(STATE.currentRecord);
+    document.getElementById('sendStatus').innerHTML = '<div class="icon">✅</div><div class="msg success">发送完成！<br>请检查电脑端 decoder</div>';
+  } catch(e) {
+    document.getElementById('sendStatus').innerHTML = '<div class="icon">❌</div><div class="msg">发送失败: '+e.message+'</div>';
+  }
+}
+
+// ============ Copy ============
+function copyResult() {
+  navigator.clipboard.writeText(STATE.currentRecord).then(() => toast('已复制到剪贴板')).catch(() => toast('复制失败'));
+}
+
+// ============ History ============
+function saveHistory(name, fields, record) {
+  STATE.history.unshift({ name, fields, record, time: new Date().toISOString() });
+  if (STATE.history.length > 100) STATE.history = STATE.history.slice(0, 100);
+  localStorage.setItem('mcHistory', JSON.stringify(STATE.history));
+}
+
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  if (!STATE.history.length) { el.innerHTML = '<div class="empty">📝 暂无记录</div>'; return; }
+  el.innerHTML = STATE.history.map((h, i) => `
+    <div class="h-item">
+      <div class="meta"><span>${h.name}</span><span>${fmtTime(h.time)}</span></div>
+      <div class="preview">${h.record.replace(/</g,'&lt;')}</div>
+      <div class="btn-row">
+        <button onclick="copyHistory(${i})">📋 复制</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function copyHistory(i) {
+  navigator.clipboard.writeText(STATE.history[i].record).then(() => toast('已复制'));
+}
+
+function fmtTime(iso) {
+  const d = new Date(iso), n = new Date(), diff = n - d;
+  if (diff < 6e4) return '刚刚';
+  if (diff < 36e5) return Math.floor(diff/6e4)+'分钟前';
+  if (diff < 864e5) return Math.floor(diff/36e5)+'小时前';
+  return (d.getMonth()+1)+'月'+d.getDate()+'日';
+}
+
+// ============ PWA ============
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
