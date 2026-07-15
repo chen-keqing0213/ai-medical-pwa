@@ -11,24 +11,20 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;font-size:16px;color
 h1{font-size:22px;text-align:center;margin:12px 0 4px;color:#2563EB}
 .sub{text-align:center;font-size:13px;color:#64748B;margin-bottom:14px}
 
-/* Voice button */
 .voice-wrap{text-align:center;margin-bottom:14px}
-.voice-btn{display:inline-block;width:80px;height:80px;border-radius:50%;border:3px solid #2563EB;background:#FFF;font-size:36px;cursor:pointer;line-height:80px;user-select:none;-webkit-tap-highlight-color:transparent;transition:all 0.2s}
-.voice-btn:active,.voice-btn.on{background:#2563EB;transform:scale(1.05)}
-.voice-btn.on .mic{filter:brightness(0) invert(1)}
+.voice-btn{display:inline-block;width:80px;height:80px;border-radius:50%;border:3px solid #2563EB;background:#FFF;font-size:36px;cursor:pointer;line-height:80px;user-select:none;transition:all .2s}
+.voice-btn.on{background:#2563EB;color:#FFF}
 .voice-hint{font-size:13px;color:#64748B;margin-top:6px}
 .voice-out{padding:12px;background:#F8FAFC;border-radius:10px;font-size:14px;line-height:1.6;margin-top:8px;display:none;text-align:left}
 .voice-out.show{display:block}
 
 .card{background:#FFF;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
 
-/* Fields - simplified */
 .field{margin-bottom:12px}
 .field:last-child{margin-bottom:0}
 .field label{display:block;font-size:14px;font-weight:600;margin-bottom:4px}
 .field textarea{width:100%;padding:12px;border:1.5px solid #E2E8F0;border-radius:10px;font-size:15px;line-height:1.6;font-family:inherit;resize:vertical;background:#FAFAFA}
 .field textarea:focus{border-color:#2563EB;background:#FFF;outline:none}
-.field .placeholder{color:#94A3B8}
 
 .btn{display:block;width:100%;padding:16px;border:none;border-radius:12px;font-size:17px;font-weight:600;text-align:center;cursor:pointer;margin-top:10px}
 .btn-blue{background:#2563EB;color:#FFF}
@@ -46,26 +42,23 @@ h1{font-size:22px;text-align:center;margin:12px 0 4px;color:#2563EB}
 
 .record{font-size:15px;line-height:2;white-space:pre-line;word-break:break-all;border-top:1px solid #E2E8F0;margin-top:14px;padding-top:14px}
 .deco{text-align:center;font-size:12px;color:#94A3B8;padding:16px 0}
-
 .toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);color:#FFF;padding:12px 24px;border-radius:10px;font-size:14px;z-index:999;pointer-events:none;opacity:0;transition:opacity .3s}
 .toast.show{opacity:1}
-
-.field-count{text-align:right;font-size:11px;color:#94A3B8;margin-top:2px}
 </style>
 </head>
 <body>
 
 <h1>📋 AI 病历草稿助手</h1>
-<div class="sub">首次病程记录 · 语音录入 · 扫码枪录入EMR</div>
+<div class="sub">首次病程记录 · 4字段极简输入 · 扫码枪录入</div>
 
-<!-- Voice input -->
+<!-- Voice -->
 <div class="voice-wrap">
-  <div class="voice-btn" id="micBtn"><span class="mic">🎤</span></div>
-  <div class="voice-hint" id="micHint">点一下开始口述，再点一下结束</div>
+  <button class="voice-btn" id="micBtn">🎤</button>
+  <div class="voice-hint" id="micHint">点一下开始口述，再说一遍结束</div>
   <div class="voice-out" id="voiceOut"></div>
 </div>
 
-<!-- Simplified form - 4 key fields -->
+<!-- Form -->
 <div class="card" id="formCard">
   <div class="field">
     <label>① 主诉</label>
@@ -73,7 +66,7 @@ h1{font-size:22px;text-align:center;margin:12px 0 4px;color:#2563EB}
   </div>
   <div class="field">
     <label>② 重要发现</label>
-    <textarea id="b" rows="5" placeholder="现病史、既往史、查体发现、辅助检查结果……都可以写在这里，AI会帮你整理分类"></textarea>
+    <textarea id="b" rows="5" placeholder="现病史、既往史、查体发现、辅助检查结果……AI会帮你整理分类"></textarea>
   </div>
   <div class="field">
     <label>③ 初步诊断</label>
@@ -81,7 +74,7 @@ h1{font-size:22px;text-align:center;margin:12px 0 4px;color:#2563EB}
   </div>
   <div class="field">
     <label>④ 诊疗计划</label>
-    <textarea id="d" rows="3" placeholder="检查计划 + 治疗计划，如：急诊PCI、双联抗血小板……"></textarea>
+    <textarea id="d" rows="3" placeholder="检查 + 治疗，如：急诊PCI、双联抗血小板……"></textarea>
   </div>
 </div>
 
@@ -111,185 +104,102 @@ var DSK='sk-e5cf7e638d824e5dbb8fc0d7468c95aa';
 var cur='';
 var voiceText='';
 
-// ========== Voice ==========
+// ===== Voice =====
 var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-var rec=null,listening=false;
+var rec=null;
+var listening=false;
 
 $('micBtn').addEventListener('click',function(){
-  if(!SR){T('您的浏览器不支持语音识别，请使用Chrome或Safari');return;}
-  if(listening){stopVoice();return;}
-  startVoice();
+  if(!SR){T('请用手机浏览器打开（Chrome/Safari），微信和电脑浏览器不支持语音');return;}
+  if(listening){stopVoice();}else{startVoice();}
 });
-$('micBtn').addEventListener('touchstart',function(e){e.preventDefault();});
 
 function startVoice(){
-  listening=true;
-  $('micBtn').classList.add('on');
-  $('micHint').textContent='🔴 正在聆听……请口述病历信息';
-  voiceText='';
-
-  if(!rec){
-    rec=new SR();
-    rec.lang='zh-CN';rec.interimResults=true;rec.continuous=true;
-    rec.onresult=function(e){
-      voiceText='';
-      for(var i=0;i<e.results.length;i++)voiceText+=e.results[i][0].transcript;
-      $('voiceOut').textContent=voiceText;
-      $('voiceOut').classList.add('show');
-    };
-    rec.onerror=function(e){stopVoice();T('语音识别中断');};
-    rec.onend=function(){if(listening){try{rec.start();}catch(e){stopVoice();}}};
-  }
-  rec.start();
+  try{
+    rec=new SR();rec.lang='zh-CN';rec.interimResults=true;rec.continuous=false;
+    rec.onstart=function(){listening=true;$('micBtn').classList.add('on');$('micHint').textContent='🔴 聆听中……说完了再点一次结束';voiceText='';};
+    rec.onresult=function(e){voiceText='';for(var i=0;i<e.results.length;i++)voiceText+=e.results[i][0].transcript;$('voiceOut').textContent=voiceText;$('voiceOut').classList.add('show');};
+    rec.onerror=function(e){stopVoice();var m={'not-allowed':'请允许麦克风权限','no-speech':'未检测到声音','network':'网络异常'};T(m[e.error]||'语音失败');};
+    rec.onend=function(){if(listening){stopVoice();if(voiceText.trim()){autoFill(voiceText);T('已识别并填入字段，请检查修正');}}};
+    rec.start();
+  }catch(e){T('语音启动失败，请手动填写');}
 }
 
 function stopVoice(){
-  listening=false;
-  $('micBtn').classList.remove('on');
-  $('micHint').textContent='点一下开始口述，再点一下结束';
-  if(rec){try{rec.stop();}catch(e){}}
-
-  if(voiceText.trim()){
-    // Auto-fill fields using keyword matching
-    autoFill(voiceText);
-    T('已识别并自动填入字段，请检查修正');
-  }
+  listening=false;$('micBtn').classList.remove('on');$('micHint').textContent='点一下开始口述，再说一遍结束';
+  try{rec.stop();}catch(e){}
 }
 
-function autoFill(text){
-  // Try to extract sections
-  var patterns=[
-    {id:'a',re:/主诉[：:]\s*(.+?)(?：|。|\n|重要发现|查体|检查|既往|现病史|诊断|计划|治疗)/},
-    {id:'a',re:/(?:主诉|症状)[：:]\s*(.+)/},
-    {id:'c',re:/(?:初步诊断|诊断)[：:]\s*(.+?)(?：|。|\n|计划|治疗|鉴别)/},
-    {id:'c',re:/(?:考虑|诊断为?)[：:]\s*(.+)/},
-    {id:'d',re:/(?:诊疗计划|治疗计划|计划)[：:]\s*(.+?)(?：|。|\n|$)/},
-    {id:'d',re:/(?:予|给予|计划行)[：:]\s*(.+)/},
-  ];
-
-  // Best effort: put everything except matched sections into 重要发现 (b)
-  var matched=new Set();
-  for(var i=0;i<patterns.length;i++){
-    var m=text.match(patterns[i].re);
-    if(m&&m[1]&&m[1].trim()){
-      var existing=$('b').value;
-      if(!$('a').value&&patterns[i].id==='a')$('a').value=m[1].trim();
-      if(!$('c').value&&patterns[i].id==='c')$('c').value=m[1].trim();
-      if(!$('d').value&&patterns[i].id==='d')$('d').value=m[1].trim();
-      matched.add(i);
-    }
-  }
-
-  // If nothing matched, put everything in 重要发现
-  if(!$('a').value&&!$('c').value&&!$('d').value){
-    if(!$('b').value)$('b').value=text;
-  }
+function autoFill(txt){
+  var m1=txt.match(/主诉[：:]\s*(.+?)(?:。|重要发现|查体|检查|既往|现病史|诊断|计划|治疗|$)/);
+  var m2=txt.match(/(?:初步|诊断)[：:]\s*(.+?)(?:。|计划|治疗|$)/);
+  var m3=txt.match(/(?:计划|方案|处理)[：:]\s*(.+?)(?:。|$)/);
+  if(m1&&m1[1]&&!$('a').value)$('a').value=m1[1].trim();
+  if(m2&&m2[1]&&!$('c').value)$('c').value=m2[1].trim();
+  if(m3&&m3[1]&&!$('d').value)$('d').value=m3[1].trim();
+  if(!$('a').value&&!$('c').value&&!$('d').value&&!$('b').value)$('b').value=txt;
 }
 
-// ========== Build record ==========
+// ===== Build =====
 function build(f){
   var p=[];
   p.push('【首次病程记录】');p.push('');
-
   p.push('一、病例特点');
-  if(f.a)p.push('主诉：'+f.a);
-  else p.push('主诉：【待补充】');
-
-  if(f.b){
-    // 重要发现 is a combined field - AI or doctor fills everything here
-    p.push(f.b);
-  }
-
+  p.push('主诉：'+(f.a||'【待补充】'));
+  if(f.b)p.push(f.b);
   p.push('');p.push('二、拟诊讨论');
-  if(f.c)p.push('初步诊断：'+f.c);
-  else p.push('初步诊断：【待补充】');
-  p.push('诊断依据：见上述病例特点');
+  p.push('初步诊断：'+(f.c||'【待补充】'));
+  if(f.c)p.push('诊断依据：见上述病例特点');
   p.push('鉴别诊断：【待补充】');
-
   p.push('');p.push('三、诊疗计划');
-  if(f.d)p.push(f.d);
-  else p.push('【待补充】');
-
+  p.push(f.d||'【待补充】');
   p.push('');p.push('※ AI生成草稿，请医师审核修改后使用');
   return p.join('\n');
 }
 
-// ========== QR ==========
+// ===== QR =====
 function showQR(text){
   var c=$('qrCanvas');c.innerHTML='';
-  var cv=document.createElement('canvas');
-  cv.width=cv.height=300;c.appendChild(cv);
-  var ctx=cv.getContext('2d');
-  ctx.fillStyle='#FFF';ctx.fillRect(0,0,300,300);
+  var cv=document.createElement('canvas');cv.width=cv.height=300;c.appendChild(cv);
+  var ctx=cv.getContext('2d');ctx.fillStyle='#FFF';ctx.fillRect(0,0,300,300);
   var img=document.createElement('img');
   img.onload=function(){ctx.drawImage(img,0,0,300,300);};
   img.src='https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=8&data='+encodeURIComponent(text);
 }
 
-// ========== Show result ==========
+// ===== Show =====
 function show(text){
-  cur=text;
-  $('recordText').textContent=text;
+  cur=text;$('recordText').textContent=text;
   $('resultArea').classList.add('show');
-  $('formCard').style.display='none';
-  $('genBtn').style.display='none';
+  $('formCard').style.display='none';$('genBtn').style.display='none';
   document.querySelector('.voice-wrap').style.display='none';
-  showQR(text);
-  window.scrollTo(0,0);
+  showQR(text);window.scrollTo(0,0);
 }
 
-// ========== Generate ==========
+// ===== Generate =====
 function go(){
   var f={a:$('a').value.trim(),b:$('b').value.trim(),c:$('c').value.trim(),d:$('d').value.trim()};
   if(!f.a&&!f.b&&!f.c&&!f.d){T('请至少填写一项信息');return;}
+  var btn=$('genBtn');btn.disabled=true;btn.textContent='生成中...';
 
-  var btn=$('genBtn');btn.disabled=true;btn.textContent='⏳ 生成中...';
-
-  // 1. Show local version immediately
-  var text=build(f);
-  show(text);
+  // Show local version immediately
+  show(build(f));
   btn.disabled=false;btn.textContent='✨ 生成首次病程记录';
 
-  // 2. Try AI upgrade in background
-  var sum='主诉：'+(f.a||'无')+'\n';
-  sum+='重要临床发现：'+(f.b||'无')+'\n';
-  sum+='初步诊断：'+(f.c||'无')+'\n';
-  sum+='诊疗计划：'+(f.d||'无');
-
+  // Try AI upgrade
+  var sum='主诉：'+(f.a||'无')+'\n重要发现：'+(f.b||'无')+'\n诊断：'+(f.c||'无')+'\n计划：'+(f.d||'无');
   var xhr=new XMLHttpRequest();
   xhr.open('POST','https://api.deepseek.com/v1/chat/completions');
   xhr.setRequestHeader('Content-Type','application/json');
   xhr.setRequestHeader('Authorization','Bearer '+DSK);
   xhr.onload=function(){
-    if(xhr.status===200){
-      try{
-        var d=JSON.parse(xhr.responseText);
-        if(d.choices&&d.choices[0]){
-          cur=d.choices[0].message.content.trim()+'\n\n※ AI生成草稿，请医师审核修改后使用';
-          $('recordText').textContent=cur;showQR(cur);
-        }
-      }catch(e){}
-    }
+    if(xhr.status===200){try{var d=JSON.parse(xhr.responseText);if(d.choices&&d.choices[0]){cur=d.choices[0].message.content.trim()+'\n\n※ AI生成草稿，请医师审核修改后使用';$('recordText').textContent=cur;showQR(cur);}}catch(e){}}
   };
-  xhr.send(JSON.stringify({
-    model:'deepseek-chat',
-    messages:[
-      {role:'system',content:'你是一位经验丰富的中国临床医师。请根据以下信息生成规范的「首次病程记录」。严格按照一、病例特点（主诉、现病史、既往史、体格检查、辅助检查）二、拟诊讨论（初步诊断、诊断依据、鉴别诊断）三、诊疗计划（检查计划、治疗计划）的结构组织。使用专业术语，符合《病历书写基本规范》，缺失信息标注【待补充】。'},
-      {role:'user',content:'患者信息：\n'+sum}
-    ],
-    temperature:0.3,max_tokens:1200
-  }));
+  xhr.send(JSON.stringify({model:'deepseek-chat',messages:[{role:'system',content:'你是经验丰富的中国临床医师。请生成规范的「首次病程记录」。结构：一、病例特点（主诉、现病史、既往史、体格检查、辅助检查）二、拟诊讨论（初步诊断、诊断依据、鉴别诊断）三、诊疗计划（检查计划、治疗计划）。专业术语，符合规范。缺失标注【待补充】。'},{role:'user',content:'患者信息：\n'+sum}],temperature:0.3,max_tokens:1200}));
 }
 
-// ========== Buttons ==========
 function cp(){navigator.clipboard.writeText(cur).then(function(){T('已复制')}).catch(function(){T('复制失败')});}
-function again(){
-  $('resultArea').classList.remove('show');
-  $('formCard').style.display='';
-  $('genBtn').style.display='';
-  document.querySelector('.voice-wrap').style.display='';
-  window.scrollTo(0,0);
-}
+function again(){$('resultArea').classList.remove('show');$('formCard').style.display='';$('genBtn').style.display='';document.querySelector('.voice-wrap').style.display='';window.scrollTo(0,0);}
 </script>
 </body>
 </html>
