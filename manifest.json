@@ -1,0 +1,14 @@
+{
+  "name": "AI 病历草稿助手",
+  "short_name": "AI病历助手",
+  "description": "AI辅助生成首次病程记录，音频传输至内网电脑",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F1F5F9",
+  "theme_color": "#2563EB",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
