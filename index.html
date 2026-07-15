@@ -281,40 +281,65 @@ function renderQR(idx) {
 }
 
 // ===== Generate =====
-async function generate() {
-  var keys=['f1','f2','f3','f4','f5','f6','f7','f8','f9','f10','f11'];
-  var fields={};
-  for(var i=0;i<keys.length;i++) fields[keys[i]]=document.getElementById(keys[i]).value.trim();
-  if(!Object.values(fields).some(function(v){return v;})){t('请至少填写一项信息');return;}
+function generate() {
+  var fields={},keys=['f1','f2','f3','f4','f5','f6','f7','f8','f9','f10','f11'];
+  for(var i=0;i<keys.length;i++){fields[keys[i]]=document.getElementById(keys[i]).value.trim();}
+  var has=keys.some(function(k){return fields[k];});
+  if(!has){t('请至少填写一项信息');return;}
 
   var btn=document.getElementById('genBtn');
-  btn.disabled=true;btn.textContent='⏳ AI生成中...';
-  var systemPrompt='你是一名经验丰富的临床医师，请根据以下信息生成规范的「首次病程记录」。按病例特点→拟诊讨论→诊疗计划组织。严格使用医学术语，符合《病历书写基本规范》，阿拉伯数字和24小时制，缺失标记【待补充】，不出现AI字样。';
+  btn.disabled=true;btn.textContent='⏳ 生成中...';
 
-  var record;
-  try{
-    var summary=fields.f1?('主诉：'+fields.f1+'\n':'')+(fields.f2?'现病史：'+fields.f2+'\n':'')+(fields.f3?'既往史：'+fields.f3+'\n':'')+(fields.f4?'生命体征：'+fields.f4+'\n':'')+(fields.f5?'查体：'+fields.f5+'\n':'')+(fields.f6?'辅助检查：'+fields.f6+'\n':'')+(fields.f7?'初步诊断：'+fields.f7+'\n':'')+(fields.f8?'诊断依据：'+fields.f8+'\n':'')+(fields.f9?'鉴别诊断：'+fields.f9+'\n':'')+(fields.f10?'检查计划：'+fields.f10+'\n':'')+(fields.f11?'治疗计划：'+fields.f11:'');
-    var dp=await fetch('https://api.deepseek.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer sk-e5cf7e638d824e5dbb8fc0d7468c95aa'},body:JSON.stringify({model:'deepseek-chat',messages:[{role:'system',content:'你是一名经验丰富的中国临床医师，擅长书写规范的病历文书。你的回答必须专业、准确、简洁。'},{role:'user',content:systemPrompt+'\n\n---\n患者临床信息：\n'+summary+'\n---\n请生成规范的首次病程记录。'}],temperature:0.3,max_tokens:1200})});
-    var d=await dp.json();
-    record=d.choices[0].message.content.trim()+'\n\n※ AI生成草稿，请医师审核修改后使用';
-  }catch(e){
-    record=buildFallback(fields);
-  }
+  // 先显示本地版本
+  var record=buildFallback(fields);
+  showResult(record);
+  btn.disabled=false;btn.textContent='✨ 生成首次病程记录';
 
+  // 后台尝试 AI 生成，成功则更新
+  tryCallAI(fields);
+}
+
+function showResult(record) {
   currentRecord=record;
   document.getElementById('recordText').innerHTML=record.replace(/\n/g,'<br>');
   document.getElementById('resultBox').classList.add('show');
   document.getElementById('formCard').style.display='none';
   document.getElementById('genBtn').style.display='none';
-  currentSeg=0;
-  showQR(record);
+  currentSeg=0;showQR(record);
   window.scrollTo({top:0,behavior:'smooth'});
-
   DATA.unshift({record:record,time:new Date().toISOString()});
   if(DATA.length>200)DATA=DATA.slice(0,200);
   save();renderHistory();
-  btn.disabled=false;btn.textContent='✨ 生成首次病程记录';
 }
+
+function tryCallAI(fields) {
+  var summary='';
+  if(fields.f1)summary+='主诉：'+fields.f1+'\n';
+  if(fields.f2)summary+='现病史：'+fields.f2+'\n';
+  if(fields.f3)summary+='既往史：'+fields.f3+'\n';
+  if(fields.f4)summary+='生命体征：'+fields.f4+'\n';
+  if(fields.f5)summary+='查体：'+fields.f5+'\n';
+  if(fields.f6)summary+='辅助检查：'+fields.f6+'\n';
+  if(fields.f7)summary+='初步诊断：'+fields.f7+'\n';
+  if(fields.f8)summary+='诊断依据：'+fields.f8+'\n';
+  if(fields.f9)summary+='鉴别诊断：'+fields.f9+'\n';
+  if(fields.f10)summary+='检查计划：'+fields.f10+'\n';
+  if(fields.f11)summary+='治疗计划：'+fields.f11;
+
+  var systemPrompt='按病例特点→拟诊讨论→诊疗计划组织，生成规范的首次病程记录。专业术语，符合规范。';
+  var body=JSON.stringify({model:'deepseek-chat',messages:[{role:'system',content:'你是经验丰富的中国临床医师。'},{role:'user',content:systemPrompt+'\n\n患者信息：\n'+summary}],temperature:0.3,max_tokens:1200});
+
+  fetch('https://api.deepseek.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer sk-e5cf7e638d824e5dbb8fc0d7468c95aa'},body:body})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d.choices&&d.choices[0]){
+      var aiRecord=d.choices[0].message.content.trim()+'\n\n※ AI生成草稿，请医师审核修改后使用';
+      currentRecord=aiRecord;
+      document.getElementById('recordText').innerHTML=aiRecord.replace(/\n/g,'<br>');
+      currentSeg=0;showQR(aiRecord);
+      DATA[0].record=aiRecord;save();renderHistory();
+    }
+  }).catch(function(){});
 
 function buildFallback(f){
   return '【首次病程记录 - 脱机草稿】\n\n一、病例特点\n'+(f.f1?'主诉：'+f.f1+'\n':'')+(f.f2?'现病史：'+f.f2+'\n':'')+(f.f3?'既往史：'+f.f3+'\n':'')+'\n二、体格检查\n'+(f.f4?'生命体征：'+f.f4+'\n':'')+(f.f5?'查体：'+f.f5+'\n':'')+'\n三、辅助检查\n'+(f.f6?f.f6+'\n':'')+'\n四、拟诊讨论\n'+(f.f7?'初步诊断：'+f.f7+'\n':'')+(f.f8?'诊断依据：'+f.f8+'\n':'')+(f.f9?'鉴别诊断：'+f.f9+'\n':'')+'\n五、诊疗计划\n'+(f.f10?'检查计划：'+f.f10+'\n':'')+(f.f11?'治疗计划：'+f.f11+'\n':'')+'\n※ AI生成草稿（脱机模式），请医师审核修改后使用';
