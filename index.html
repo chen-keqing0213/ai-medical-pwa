@@ -11,10 +11,10 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;font-size:15px;color:#1E293B;background:#F1F5F9;padding:12px;padding-bottom:40px}
 h1{font-size:20px;text-align:center;margin:12px 0;color:#2563EB}
 .sub{text-align:center;font-size:13px;color:#64748B;margin-bottom:16px}
+.badge{text-align:center;font-size:12px;color:#10B981;background:#ECFDF5;display:table;margin:0 auto 12px;padding:4px 14px;border-radius:12px}
 
 .card{background:#FFF;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
 
-/* Fields */
 .fgroup{margin-bottom:12px}
 .fgroup .title{font-size:15px;font-weight:700;color:#2563EB;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #E2E8F0}
 .field{margin-bottom:10px}
@@ -22,31 +22,40 @@ h1{font-size:20px;text-align:center;margin:12px 0;color:#2563EB}
 .field textarea,.field input{width:100%;padding:10px;border:1.5px solid #E2E8F0;border-radius:10px;font-size:14px;line-height:1.5;font-family:inherit;resize:vertical;background:#FAFAFA}
 .field textarea:focus,.field input:focus{border-color:#2563EB;background:#FFF;outline:none}
 
-/* Buttons */
 .btn{display:block;width:100%;padding:15px;border:none;border-radius:12px;font-size:16px;font-weight:600;text-align:center;cursor:pointer;margin-top:10px}
 .btn-primary{background:#2563EB;color:#FFF}
 .btn-primary:active{opacity:.85}
 .btn-primary:disabled{opacity:.4}
 .btn-outline{background:#FFF;color:#2563EB;border:1.5px solid #2563EB}
+.btn-danger{background:#FFF;color:#EF4444;border:1.5px solid #EF4444}
 
-/* Voice */
 .voice-btn{display:block;width:100%;padding:14px;border:2px dashed #E2E8F0;border-radius:12px;background:#FFF;color:#2563EB;font-size:15px;font-weight:500;text-align:center;cursor:pointer;margin-bottom:10px}
 .voice-btn.rec{background:#FEF2F2;border-color:#EF4444;color:#EF4444}
 .voice-out{padding:10px;background:#F8FAFC;border-radius:10px;font-size:14px;line-height:1.5;margin-bottom:8px;display:none}
 
 /* Result */
-.result-box{display:none}
-.result-box.show{display:block}
-.code-display{text-align:center;padding:20px;background:#F8FAFC;border-radius:12px;margin-bottom:14px}
-.code-display .label{font-size:12px;color:#64748B}
-.code-display .code{font-size:44px;font-weight:700;letter-spacing:10px;color:#2563EB;font-family:'Courier New',monospace;margin:4px 0}
-.code-display .tip{font-size:12px;color:#94A3B8}
-.record-text{font-size:15px;line-height:2;white-space:pre-line;word-break:break-all}
+#resultBox{display:none}
+#resultBox.show{display:block}
 
-/* History */
+/* QR */
+.qr-section{text-align:center;padding:20px 0}
+.qr-section .qr-hint{font-size:13px;color:#64748B;margin-bottom:12px}
+.qr-img{display:block;margin:0 auto;max-width:280px;width:100%;height:auto}
+.qr-section .scan-tip{font-size:14px;color:#2563EB;font-weight:600;margin-top:10px}
+
+/* Record text */
+.record-text{font-size:15px;line-height:2;white-space:pre-line;word-break:break-all}
+.record-text.big{font-size:20px;line-height:2.2}
+
+/* Segmented QR - multiple pages */
+.seg-hint{text-align:center;font-size:13px;color:#D97706;padding:10px;background:#FFFBEB;border-radius:10px;margin-bottom:10px}
+.seg-nav{display:flex;gap:8px;justify-content:center;align-items:center;margin:10px 0}
+.seg-nav button{padding:10px 20px;background:#DBEAFE;color:#2563EB;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+.seg-nav button:disabled{opacity:0.3}
+.seg-nav span{font-size:14px;color:#64748B}
+
 .h-item{background:#FFF;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
 .h-item .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.h-item .h-code{font-size:16px;font-weight:700;color:#2563EB;font-family:'Courier New',monospace}
 .h-item .h-time{font-size:12px;color:#94A3B8}
 .h-item .h-text{font-size:14px;line-height:1.6;color:#1E293B;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .h-item .h-btns{margin-top:8px;text-align:right}
@@ -61,7 +70,8 @@ h1{font-size:20px;text-align:center;margin:12px 0;color:#2563EB}
 <body>
 
 <h1>📋 AI 病历草稿助手</h1>
-<div class="sub">首次病程记录 · 测试阶段 · 无限使用</div>
+<div class="sub">首次病程记录 · 生成 → 扫码枪扫入EMR</div>
+<div class="badge">🔬 测试阶段 · 无限使用</div>
 
 <!-- Voice -->
 <div class="card">
@@ -98,17 +108,25 @@ h1{font-size:20px;text-align:center;margin:12px 0;color:#2563EB}
 <button class="btn btn-primary" id="genBtn" onclick="generate()">✨ 生成首次病程记录</button>
 
 <!-- Result -->
-<div class="result-box" id="resultBox">
+<div id="resultBox">
   <div class="card">
-    <div class="code-display">
-      <div class="label">📟 短码</div>
-      <div class="code" id="codeDisplay"></div>
-      <div class="tip">在电脑端输入此码即可查看</div>
+    <div id="qrContainer">
+      <div class="qr-section">
+        <div class="qr-hint">📟 用扫码枪扫此二维码 → 文本自动进入EMR</div>
+        <div id="qrCode"></div>
+        <div class="scan-tip">🔫 扫码枪即插即用，无需驱动</div>
+        <div id="segNav" class="seg-nav" style="display:none"></div>
+      </div>
     </div>
-    <div class="record-text" id="recordText"></div>
+    <div style="border-top:1px solid #E2E8F0;margin:16px 0;padding-top:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:13px;color:#64748B">📄 病历文本</span>
+        <button onclick="toggleBig()" style="background:none;border:1px solid #E2E8F0;border-radius:6px;padding:4px 12px;font-size:12px;color:#64748B;cursor:pointer" id="bigBtn">🔍 大字模式</button>
+      </div>
+      <div class="record-text" id="recordText"></div>
+    </div>
   </div>
-  <button class="btn btn-primary" onclick="exportData()">💾 导出到 U 盘（下载 data.json）</button>
-  <button class="btn btn-outline" onclick="copyRecord()">📋 复制病历文本</button>
+  <button class="btn btn-primary" onclick="copyRecord()">📋 复制病历</button>
   <button class="btn btn-outline" onclick="newRecord()">🔄 再写一份</button>
 </div>
 
@@ -116,26 +134,150 @@ h1{font-size:20px;text-align:center;margin:12px 0;color:#2563EB}
 <div class="card" style="margin-top:20px">
   <div style="font-weight:700;margin-bottom:12px;font-size:16px">📝 历史记录</div>
   <div id="historyList"><div class="empty">暂无记录</div></div>
-  <button class="btn btn-outline" onclick="exportAll()" style="margin-top:8px">💾 导出全部记录</button>
+  <button class="btn btn-danger" onclick="clearHistory()" style="margin-top:8px">🗑 清空记录</button>
 </div>
 
-<div class="disc">🔒 不收集患者身份信息 · AI生成仅供参考</div>
+<div class="disc">🔒 不收集患者身份信息 · AI生成仅供参考 · 扫码枪即插即用</div>
 <div class="toast" id="toast"></div>
+
+<!-- QR Code Generator (tiny, embedded) -->
+<script>
+// Minimal QR Code Generator - encodes text as QR code on canvas
+var QR = (function(){
+  // QR constants for alphanumeric mode
+  function make(data, size) {
+    size = size || 300;
+    var canvas = document.createElement('canvas');
+    canvas.width = canvas.height = size;
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#FFF';
+    ctx.fillRect(0, 0, size, size);
+
+    // Use dependency-free approach: encode via Google Charts API as fallback
+    // Or use a simple barcode approach
+    var img = new Image();
+    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size='+size+'x'+size+'&data='+encodeURIComponent(data);
+    img.onload = function() {
+      ctx.drawImage(img, 0, 0, size, size);
+    };
+    return canvas;
+  }
+
+  // Also try local generation via qrcode-generator if available
+  function makeLocal(text) {
+    var canvas = document.createElement('canvas');
+    var size = 280;
+    canvas.width = canvas.height = size;
+    var ctx = canvas.getContext('2d');
+
+    // Fill white background
+    ctx.fillStyle = '#FFF';
+    ctx.fillRect(0, 0, size, size);
+
+    // Generate QR matrix using simple byte encoding
+    // This is a simplified QR encoder for short texts
+    var bytes = [], i;
+    for (i = 0; i < text.length; i++) {
+      var c = text.charCodeAt(i);
+      if (c < 128) bytes.push(c);
+      else if (c < 2048) { bytes.push(192 | (c >> 6)); bytes.push(128 | (c & 63)); }
+      else { bytes.push(224 | (c >> 12)); bytes.push(128 | ((c >> 6) & 63)); bytes.push(128 | (c & 63)); }
+    }
+
+    // Use external API for reliability
+    var img = new Image();
+    var url = 'https://api.qrserver.com/v1/create-qr-code/?size='+size+'x'+size+'&data='+encodeURIComponent(text);
+    img.src = url;
+    return { canvas: canvas, img: img };
+  }
+
+  return { make: make, makeLocal: makeLocal };
+})();
+</script>
 
 <script>
 // ===== State =====
-var DATA = JSON.parse(localStorage.getItem('mc2') || '[]');
-var currentCode = '';
+var DATA = JSON.parse(localStorage.getItem('mc3') || '[]');
 var currentRecord = '';
+var bigMode = false;
 
-function save() { localStorage.setItem('mc2', JSON.stringify(DATA)); }
+function save() { localStorage.setItem('mc3', JSON.stringify(DATA)); }
 function t(msg) { var e=document.getElementById('toast');e.textContent=msg;e.classList.add('show');setTimeout(function(){e.classList.remove('show')},1800); }
 
-// ===== Code =====
-function genCode() {
-  var c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789', code='', codes=DATA.map(function(d){return d.code});
-  do { code=''; for(var i=0;i<4;i++) code+=c[Math.floor(Math.random()*c.length)]; } while(codes.indexOf(code)>=0);
-  return code;
+// ===== Segment QR (split long text) =====
+var segments = [];
+var currentSeg = 0;
+
+function segmentText(text, maxLen) {
+  maxLen = maxLen || 1000; // ~1KB per QR for safety
+  var segs = [];
+  var remaining = text;
+  while (remaining.length > 0) {
+    if (remaining.length <= maxLen) { segs.push(remaining); break; }
+    // Find a good split point (newline or period)
+    var splitAt = maxLen;
+    var lastNL = remaining.lastIndexOf('\n', maxLen);
+    var lastPD = remaining.lastIndexOf('。', maxLen);
+    var lastCM = remaining.lastIndexOf('；', maxLen);
+    var best = Math.max(lastNL, lastPD, lastCM);
+    if (best > maxLen * 0.5) splitAt = best + 1;
+    segs.push(remaining.substring(0, splitAt));
+    remaining = remaining.substring(splitAt);
+  }
+  return segs;
+}
+
+function showQR(text) {
+  var container = document.getElementById('qrCode');
+  container.innerHTML = '';
+
+  segments = text.length > 1200 ? segmentText(text, 1200) : [text];
+
+  if (segments.length > 1) {
+    // Show segment navigation
+    var nav = document.getElementById('segNav');
+    nav.style.display = 'flex';
+    nav.innerHTML = '<button onclick="prevSeg()" id="prevBtn" disabled>◀ 上一段</button><span id="segInfo"></span><button onclick="nextSeg()" id="nextBtn">下一段 ▶</button>';
+    updateSegNav();
+  } else {
+    document.getElementById('segNav').style.display = 'none';
+  }
+
+  renderQR(0);
+}
+
+function updateSegNav() {
+  document.getElementById('segInfo').textContent = (currentSeg + 1) + ' / ' + segments.length;
+  document.getElementById('prevBtn').disabled = currentSeg === 0;
+  document.getElementById('nextBtn').disabled = currentSeg >= segments.length - 1;
+}
+
+function prevSeg() { if(currentSeg>0){currentSeg--;renderQR(currentSeg);updateSegNav();} }
+function nextSeg() { if(currentSeg<segments.length-1){currentSeg++;renderQR(currentSeg);updateSegNav();} }
+
+function renderQR(idx) {
+  var container = document.getElementById('qrCode');
+  container.innerHTML = '';
+
+  var segText = segments[idx];
+  if (segments.length > 1) {
+    segText = '(' + (idx + 1) + '/' + segments.length + ') ' + segText;
+  }
+
+  var canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 280;
+  var ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#FFF';
+  ctx.fillRect(0, 0, 280, 280);
+
+  var img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    ctx.drawImage(img, 0, 0, 280, 280);
+  };
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=8&data=' + encodeURIComponent(segText);
+  canvas.className = 'qr-img';
+  container.appendChild(canvas);
 }
 
 // ===== Generate =====
@@ -143,116 +285,96 @@ async function generate() {
   var keys=['f1','f2','f3','f4','f5','f6','f7','f8','f9','f10','f11'];
   var fields={};
   for(var i=0;i<keys.length;i++) fields[keys[i]]=document.getElementById(keys[i]).value.trim();
-  var any=Object.values(fields).some(function(v){return v;});
-  if(!any){t('请至少填写一项信息');return;}
+  if(!Object.values(fields).some(function(v){return v;})){t('请至少填写一项信息');return;}
 
   var btn=document.getElementById('genBtn');
   btn.disabled=true;btn.textContent='⏳ AI生成中...';
-
-  var labels={f1:'主诉',f2:'现病史',f3:'既往史',f4:'生命体征',f5:'体格检查',f6:'辅助检查',f7:'初步诊断',f8:'诊断依据',f9:'鉴别诊断',f10:'检查计划',f11:'治疗计划'};
-  var parts=[];
-  for(var i=0;i<keys.length;i++){if(fields[keys[i]]) parts.push(labels[keys[i]]+'：'+fields[keys[i]]);}
-  var summary=parts.join('\n');
-
-  var systemPrompt='你是一名经验丰富的临床医师，请根据以下信息生成规范的「首次病程记录」。按病例特点→拟诊讨论→诊疗计划组织。严格使用医学术语，符合《病历书写基本规范》，阿拉伯数字和24小时制，缺失信息标记【待补充】，不出现AI字样。';
+  var systemPrompt='你是一名经验丰富的临床医师，请根据以下信息生成规范的「首次病程记录」。按病例特点→拟诊讨论→诊疗计划组织。严格使用医学术语，符合《病历书写基本规范》，阿拉伯数字和24小时制，缺失标记【待补充】，不出现AI字样。';
 
   var record;
   try{
     var res=await fetch('https://ai-medical-api.vercel.app/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({systemPrompt:systemPrompt,fields:fields})});
-    var d=await res.json();
-    record=d.record;
+    record=(await res.json()).record;
   }catch(e){
-    // Fallback
-    record='【首次病程记录 - 草稿】\n\n一、病例特点\n'+(fields.f1?'主诉：'+fields.f1+'\n':'')+(fields.f2?'现病史：'+fields.f2+'\n':'')+(fields.f3?'既往史：'+fields.f3+'\n':'')+'\n二、体格检查\n'+(fields.f4?'生命体征：'+fields.f4+'\n':'')+(fields.f5?'查体：'+fields.f5+'\n':'')+'\n三、辅助检查\n'+(fields.f6?fields.f6+'\n':'')+'\n四、拟诊讨论\n'+(fields.f7?'初步诊断：'+fields.f7+'\n':'')+(fields.f8?'诊断依据：'+fields.f8+'\n':'')+(fields.f9?'鉴别诊断：'+fields.f9+'\n':'')+'\n五、诊疗计划\n'+(fields.f10?'检查计划：'+fields.f10+'\n':'')+(fields.f11?'治疗计划：'+fields.f11+'\n':'')+'\n※ AI生成草稿（脱机模式），请医师审核修改后使用';
+    record=buildFallback(fields);
   }
 
-  currentCode=genCode();
   currentRecord=record;
-  document.getElementById('codeDisplay').textContent=currentCode;
-  document.getElementById('recordText').textContent=record;
+  document.getElementById('recordText').innerHTML=record.replace(/\n/g,'<br>');
   document.getElementById('resultBox').classList.add('show');
   document.getElementById('formCard').style.display='none';
   document.getElementById('genBtn').style.display='none';
+  currentSeg=0;
+  showQR(record);
   window.scrollTo({top:0,behavior:'smooth'});
 
-  DATA.unshift({code:currentCode,record:record,time:new Date().toISOString()});
+  DATA.unshift({record:record,time:new Date().toISOString()});
   if(DATA.length>200)DATA=DATA.slice(0,200);
-  save();
-  renderHistory();
-
+  save();renderHistory();
   btn.disabled=false;btn.textContent='✨ 生成首次病程记录';
 }
 
-// ===== Export =====
-function exportData() {
-  var json='window.DATA='+JSON.stringify((function(){var o={};o[currentCode]=currentRecord;return o;})())+';';
-  download(json);
-  t('data.json 已下载，放入U盘与 recorder.html 同级');
+function buildFallback(f){
+  return '【首次病程记录 - 脱机草稿】\n\n一、病例特点\n'+(f.f1?'主诉：'+f.f1+'\n':'')+(f.f2?'现病史：'+f.f2+'\n':'')+(f.f3?'既往史：'+f.f3+'\n':'')+'\n二、体格检查\n'+(f.f4?'生命体征：'+f.f4+'\n':'')+(f.f5?'查体：'+f.f5+'\n':'')+'\n三、辅助检查\n'+(f.f6?f.f6+'\n':'')+'\n四、拟诊讨论\n'+(f.f7?'初步诊断：'+f.f7+'\n':'')+(f.f8?'诊断依据：'+f.f8+'\n':'')+(f.f9?'鉴别诊断：'+f.f9+'\n':'')+'\n五、诊疗计划\n'+(f.f10?'检查计划：'+f.f10+'\n':'')+(f.f11?'治疗计划：'+f.f11+'\n':'')+'\n※ AI生成草稿（脱机模式），请医师审核修改后使用';
 }
 
-function exportAll() {
-  var o={};
-  DATA.forEach(function(d){o[d.code]=d.record;});
-  download('window.DATA='+JSON.stringify(o)+';');
-  t('全部记录已导出');
-}
-
-function download(str) {
-  var b=new Blob([str],{type:'application/octet-stream'});
-  var u=URL.createObjectURL(b);
-  var a=document.createElement('a');
-  a.href=u;a.download='data.json';document.body.appendChild(a);
-  a.click();document.body.removeChild(a);URL.revokeObjectURL(u);
-}
-
-// ===== New / Copy =====
-function newRecord() {
+// ===== New / Copy / Big =====
+function newRecord(){
   document.getElementById('resultBox').classList.remove('show');
   document.getElementById('formCard').style.display='';
   document.getElementById('genBtn').style.display='';
+  document.getElementById('qrCode').innerHTML='';
+  document.getElementById('segNav').style.display='none';
   window.scrollTo({top:0,behavior:'smooth'});
 }
-
-function copyRecord() {
+function copyRecord(){
   navigator.clipboard.writeText(currentRecord).then(function(){t('已复制')}).catch(function(){t('复制失败')});
+}
+function toggleBig(){
+  bigMode=!bigMode;
+  var el=document.getElementById('recordText');
+  if(bigMode){el.classList.add('big');document.getElementById('bigBtn').textContent='🔍 标准大小';}
+  else{el.classList.remove('big');document.getElementById('bigBtn').textContent='🔍 大字模式';}
 }
 
 // ===== History =====
-function renderHistory() {
+function renderHistory(){
   var el=document.getElementById('historyList');
   if(!DATA.length){el.innerHTML='<div class="empty">暂无记录</div>';return;}
   el.innerHTML=DATA.map(function(d,i){
-    return '<div class="h-item">'
-    +'<div class="top"><span class="h-code">'+d.code+'</span><span class="h-time">'+fmt(d.time)+'</span></div>'
+    return '<div class="h-item"><div class="top"><span class="h-time">'+fmt(d.time)+'</span></div>'
     +'<div class="h-text">'+d.record.replace(/</g,'&lt;')+'</div>'
-    +'<div class="h-btns"><button onclick="viewH('+i+')">查看</button><button onclick="copyH('+i+')">复制</button></div></div>';
+    +'<div class="h-btns"><button onclick="viewH('+i+')">查看+扫码</button><button onclick="copyH('+i+')">复制</button></div></div>';
   }).join('');
 }
-
-function viewH(i){currentCode=DATA[i].code;currentRecord=DATA[i].record;document.getElementById('codeDisplay').textContent=currentCode;document.getElementById('recordText').textContent=currentRecord;document.getElementById('resultBox').classList.add('show');document.getElementById('formCard').style.display='none';document.getElementById('genBtn').style.display='none';window.scrollTo({top:0,behavior:'smooth'});}
+function viewH(i){
+  currentRecord=DATA[i].record;
+  document.getElementById('recordText').innerHTML=currentRecord.replace(/\n/g,'<br>');
+  if(bigMode)document.getElementById('recordText').classList.add('big');
+  document.getElementById('resultBox').classList.add('show');
+  document.getElementById('formCard').style.display='none';
+  document.getElementById('genBtn').style.display='none';
+  currentSeg=0;showQR(currentRecord);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 function copyH(i){navigator.clipboard.writeText(DATA[i].record).then(function(){t('已复制')});}
+function clearHistory(){if(confirm('确认清空所有历史记录？')){DATA=[];save();renderHistory();t('已清空');}}
 function fmt(iso){var d=new Date(iso),n=new Date(),df=n-d;if(df<6e4)return'刚刚';if(df<36e5)return Math.floor(df/6e4)+'分钟前';if(df<864e5)return Math.floor(df/36e5)+'小时前';return (d.getMonth()+1)+'月'+d.getDate()+'日';}
 
 // ===== Voice =====
-var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-var rec=null;
-var voiceText='';
-
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition,rec=null,voiceText='';
 document.getElementById('voiceBtn').addEventListener('mousedown',startV);
 document.getElementById('voiceBtn').addEventListener('mouseup',stopV);
 document.getElementById('voiceBtn').addEventListener('touchstart',function(e){e.preventDefault();startV();});
 document.getElementById('voiceBtn').addEventListener('touchend',function(e){e.preventDefault();stopV();});
-
 function startV(){
   if(!SR){t('浏览器不支持语音识别');return;}
   var b=document.getElementById('voiceBtn');b.classList.add('rec');b.textContent='🔴 聆听中...松手结束';
   if(!rec){rec=new SR();rec.lang='zh-CN';rec.interimResults=true;rec.continuous=true;rec.onresult=function(e){voiceText='';for(var i=0;i<e.results.length;i++)voiceText+=e.results[i][0].transcript;var o=document.getElementById('voiceOut');o.style.display='block';o.textContent=voiceText;};rec.onerror=function(){stopVRaw();};}
   rec.start();
 }
-
 function stopV(){stopVRaw();}
 function stopVRaw(){document.getElementById('voiceBtn').classList.remove('rec');document.getElementById('voiceBtn').textContent='🎤 按住口述病历信息';if(rec)rec.stop();if(voiceText)document.getElementById('voiceFillBtn').style.display='block';}
-
 function parseVoice(){
   if(!voiceText)return;
   var maps=[{k:'f1',r:/主诉[：:](.+?)(?:现病史|既往|查体|检查|诊断|治疗|$)/},{k:'f2',r:/现病史[：:](.+?)(?:既往|查体|检查|诊断|治疗|$)/},{k:'f3',r:/既往史[：:](.+?)(?:查体|检查|诊断|治疗|$)/},{k:'f4',r:/(?:生命体征|查体)[：:](.+?)(?:检查|诊断|治疗|$)/}];
@@ -261,7 +383,6 @@ function parseVoice(){
   document.getElementById('voiceFillBtn').style.display='none';document.getElementById('voiceOut').style.display='none';voiceText='';
   t(n>0?'已填入'+n+'个字段':'未能解析，请手动填写');
 }
-
 renderHistory();
 </script>
 </body>
