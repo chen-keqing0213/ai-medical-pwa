@@ -2,447 +2,267 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="AI病历助手">
-<meta name="theme-color" content="#2563EB">
+<meta name="apple-mobile-web-app-title" content="病历助手">
 <title>AI 病历草稿助手</title>
-<link rel="manifest" href="/manifest.json">
 <style>
-:root {
-  --primary: #2563EB; --primary-light: #DBEAFE; --bg: #F1F5F9;
-  --card: #FFF; --text: #1E293B; --text2: #64748B; --border: #E2E8F0;
-  --shadow: 0 1px 3px rgba(0,0,0,0.06); --radius: 16px;
-}
-* { margin:0; padding:0; box-sizing:border-box; }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  font-size: 15px; color: var(--text); background: var(--bg);
-  padding-bottom: env(safe-area-inset-bottom);
-  -webkit-user-select: none; user-select: none;
-}
-.header {
-  background: linear-gradient(135deg, #1E40AF, #2563EB);
-  color: #FFF; padding: 20px 16px; text-align: center;
-  position: sticky; top: 0; z-index: 10;
-}
-.header h1 { font-size: 20px; font-weight: 700; }
-.header .sub { font-size: 13px; opacity: 0.8; margin-top: 4px; }
-.header .badge { font-size: 12px; margin-top: 8px; background: rgba(255,255,255,0.15); display: inline-block; padding: 4px 14px; border-radius: 16px; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;font-size:15px;color:#1E293B;background:#F1F5F9;padding:12px;padding-bottom:40px}
+h1{font-size:20px;text-align:center;margin:12px 0;color:#2563EB}
+.sub{text-align:center;font-size:13px;color:#64748B;margin-bottom:16px}
 
-.tabs { display: flex; background: #FFF; border-bottom: 1px solid var(--border); position: sticky; top: 94px; z-index: 9; }
-.tab { flex:1; text-align:center; padding:14px; font-size:14px; font-weight:500; color:var(--text2); border-bottom:2px solid transparent; cursor:pointer; }
-.tab.active { color:var(--primary); border-bottom-color:var(--primary); font-weight:600; }
+.card{background:#FFF;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
 
-.page { display: none; padding: 16px; }
-.page.active { display: block; }
+/* Fields */
+.fgroup{margin-bottom:12px}
+.fgroup .title{font-size:15px;font-weight:700;color:#2563EB;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #E2E8F0}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:3px}
+.field textarea,.field input{width:100%;padding:10px;border:1.5px solid #E2E8F0;border-radius:10px;font-size:14px;line-height:1.5;font-family:inherit;resize:vertical;background:#FAFAFA}
+.field textarea:focus,.field input:focus{border-color:#2563EB;background:#FFF;outline:none}
 
-.tpl-card {
-  background: var(--card); border-radius: var(--radius); padding: 20px;
-  margin-bottom: 12px; box-shadow: var(--shadow);
-  border-left: 5px solid var(--primary); cursor: pointer; transition: 0.15s;
-}
-.tpl-card:active { transform: scale(0.98); opacity: 0.8; }
-.tpl-card .name { font-size: 17px; font-weight: 600; }
-.tpl-card .desc { font-size: 13px; color: var(--text2); margin-top: 4px; }
+/* Buttons */
+.btn{display:block;width:100%;padding:15px;border:none;border-radius:12px;font-size:16px;font-weight:600;text-align:center;cursor:pointer;margin-top:10px}
+.btn-primary{background:#2563EB;color:#FFF}
+.btn-primary:active{opacity:.85}
+.btn-primary:disabled{opacity:.4}
+.btn-outline{background:#FFF;color:#2563EB;border:1.5px solid #2563EB}
 
-.fgroup { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
-.fgroup-title { font-size: 15px; font-weight: 700; color: var(--primary); margin-bottom: 12px; padding-bottom:8px; border-bottom:1px solid var(--border); }
-.field { margin-bottom: 14px; }
-.field:last-child { margin-bottom: 0; }
-.field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--text); }
-.field textarea, .field input {
-  width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 10px;
-  font-size: 14px; line-height: 1.5; background: #FAFAFA; font-family: inherit;
-  -webkit-appearance: none; resize: vertical;
-}
-.field textarea:focus, .field input:focus { border-color: var(--primary); background: #FFF; outline: none; }
+/* Voice */
+.voice-btn{display:block;width:100%;padding:14px;border:2px dashed #E2E8F0;border-radius:12px;background:#FFF;color:#2563EB;font-size:15px;font-weight:500;text-align:center;cursor:pointer;margin-bottom:10px}
+.voice-btn.rec{background:#FEF2F2;border-color:#EF4444;color:#EF4444}
+.voice-out{padding:10px;background:#F8FAFC;border-radius:10px;font-size:14px;line-height:1.5;margin-bottom:8px;display:none}
 
-.voice-bar { margin-bottom: 16px; }
-.voice-btn {
-  width: 100%; padding: 14px; border: 2px dashed var(--border); border-radius: 12px;
-  background: #FFF; color: var(--primary); font-size: 16px; font-weight: 500;
-  text-align: center; cursor: pointer; margin-bottom: 8px;
-}
-.voice-btn.recording { background: #FEF2F2; border-color: #EF4444; color: #EF4444; animation: pulse 1.5s infinite; }
-@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.5 } }
-.voice-preview { padding: 12px; background: #F8FAFC; border-radius: 10px; font-size: 14px; line-height: 1.6; display: none; }
-.fill-btn { margin-top: 8px; padding: 8px 16px; background: var(--primary); color: #FFF; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; display: none; }
+/* Result */
+.result-box{display:none}
+.result-box.show{display:block}
+.code-display{text-align:center;padding:20px;background:#F8FAFC;border-radius:12px;margin-bottom:14px}
+.code-display .label{font-size:12px;color:#64748B}
+.code-display .code{font-size:44px;font-weight:700;letter-spacing:10px;color:#2563EB;font-family:'Courier New',monospace;margin:4px 0}
+.code-display .tip{font-size:12px;color:#94A3B8}
+.record-text{font-size:15px;line-height:2;white-space:pre-line;word-break:break-all}
 
-.btn-primary {
-  display: block; width: 100%; padding: 16px; background: var(--primary); color: #FFF;
-  border: none; border-radius: 12px; font-size: 17px; font-weight: 600;
-  text-align: center; cursor: pointer; margin-top: 8px;
-}
-.btn-primary:active { opacity: 0.85; }
-.btn-primary:disabled { opacity: 0.4; }
-.btn-outline {
-  display: block; width: 100%; padding: 14px; background: #FFF; color: var(--primary);
-  border: 1.5px solid var(--primary); border-radius: 12px; font-size: 15px;
-  font-weight: 500; text-align: center; cursor: pointer; margin-top: 8px;
-}
+/* History */
+.h-item{background:#FFF;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.h-item .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.h-item .h-code{font-size:16px;font-weight:700;color:#2563EB;font-family:'Courier New',monospace}
+.h-item .h-time{font-size:12px;color:#94A3B8}
+.h-item .h-text{font-size:14px;line-height:1.6;color:#1E293B;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.h-item .h-btns{margin-top:8px;text-align:right}
+.h-item .h-btns button{padding:6px 14px;background:#DBEAFE;color:#2563EB;border:none;border-radius:6px;font-size:13px;margin-left:6px;cursor:pointer}
+.empty{text-align:center;padding:40px;color:#94A3B8;font-size:14px}
 
-.result-card {
-  background: var(--card); border-radius: var(--radius); padding: 24px;
-  box-shadow: var(--shadow); margin-bottom: 16px;
-}
-.code-box {
-  text-align: center; padding: 24px 0; background: #F8FAFC; border-radius: 12px; margin-bottom: 20px;
-}
-.code-box .code-label { font-size: 13px; color: var(--text2); }
-.code-box .code-value { font-size: 40px; font-weight: 700; letter-spacing: 8px; color: var(--primary); font-family: 'Courier New', monospace; margin-top: 4px; }
-.code-box .code-hint { font-size: 12px; color: var(--text2); margin-top: 6px; }
-.result-content { font-size: 15px; line-height: 2; white-space: pre-line; }
-
-.h-item {
-  background: var(--card); border-radius: var(--radius); padding: 16px;
-  margin-bottom: 10px; box-shadow: var(--shadow);
-}
-.h-item .meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); margin-bottom: 8px; }
-.h-item .meta .code { color: var(--primary); font-weight: 700; font-family: 'Courier New', monospace; }
-.h-item .preview { font-size: 14px; line-height: 1.6; color: var(--text); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.h-item .btn-row { margin-top: 10px; text-align: right; }
-.h-item .btn-row button {
-  padding: 6px 14px; background: var(--primary-light); color: var(--primary); border: none;
-  border-radius: 6px; font-size: 13px; margin-left: 8px; cursor: pointer;
-}
-.empty { text-align: center; padding: 80px 0; color: var(--text2); font-size: 15px; }
-
-.disclaimer { text-align: center; font-size: 12px; color: #94A3B8; padding: 20px; line-height: 1.6; }
-.toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(0,0,0,0.8); color: #FFF; padding: 12px 24px; border-radius: 10px; font-size: 14px; z-index: 9999; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
-.toast.show { opacity: 1; }
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);color:#FFF;padding:12px 24px;border-radius:10px;font-size:14px;z-index:999;pointer-events:none;opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+.disc{text-align:center;font-size:12px;color:#94A3B8;padding:16px 0}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>📋 AI 病历草稿助手</h1>
-  <div class="sub">首次病程记录 · 填字段即生成 · 短码同步到电脑</div>
-  <div class="badge">🔬 测试阶段 · 无限使用</div>
+<h1>📋 AI 病历草稿助手</h1>
+<div class="sub">首次病程记录 · 测试阶段 · 无限使用</div>
+
+<!-- Voice -->
+<div class="card">
+  <div class="voice-btn" id="voiceBtn">🎤 按住口述病历信息</div>
+  <div class="voice-out" id="voiceOut"></div>
+  <button class="btn-outline" id="voiceFillBtn" style="display:none;margin-top:6px" onclick="parseVoice()">🤖 AI解析填入</button>
 </div>
 
-<div class="tabs">
-  <div class="tab active" data-page="home">📋 写病历</div>
-  <div class="tab" data-page="result">📄 结果</div>
-  <div class="tab" data-page="history">📝 历史</div>
-</div>
-
-<!-- === HOME === -->
-<div class="page active" id="page-home">
-  <div class="tpl-card">
-    <div class="name">📋 首次病程记录</div>
-    <div class="desc">病例特点 + 拟诊讨论 + 诊疗计划 · 8小时内完成</div>
+<!-- Form -->
+<div class="card" id="formCard">
+  <div class="fgroup"><div class="title">一、病例特点</div>
+    <div class="field"><label>主诉</label><textarea id="f1" rows="2" placeholder="主要症状 + 持续时间"></textarea></div>
+    <div class="field"><label>现病史</label><textarea id="f2" rows="3" placeholder="起病情况、症状特点、诊治经过"></textarea></div>
+    <div class="field"><label>既往史</label><textarea id="f3" rows="2" placeholder="既往疾病、手术、过敏史"></textarea></div>
   </div>
-
-  <div class="voice-bar">
-    <div class="voice-btn" id="voiceBtn">🎤 按住口述病历信息</div>
-    <div class="voice-preview" id="voicePreview"></div>
-    <button class="fill-btn" id="fillBtn" onclick="parseVoice()">🤖 AI 解析填入</button>
+  <div class="fgroup"><div class="title">二、体格检查</div>
+    <div class="field"><label>生命体征</label><input id="f4" placeholder="T/P/R/BP"></div>
+    <div class="field"><label>重点查体</label><textarea id="f5" rows="2" placeholder="阳性体征及阴性体征"></textarea></div>
   </div>
-
-  <div id="formArea">
-    <div class="fgroup">
-      <div class="fgroup-title">一、病例特点</div>
-      <div class="field"><label>主诉</label><textarea id="f_chief_complaint" rows="2" placeholder="主要症状/体征 + 持续时间"></textarea></div>
-      <div class="field"><label>现病史</label><textarea id="f_present_illness" rows="3" placeholder="起病情况、症状特点、伴随症状、诊治经过"></textarea></div>
-      <div class="field"><label>既往史</label><textarea id="f_past_history" rows="2" placeholder="既往疾病、手术、过敏史"></textarea></div>
-    </div>
-    <div class="fgroup">
-      <div class="fgroup-title">二、体格检查</div>
-      <div class="field"><label>生命体征</label><input id="f_vital_signs" placeholder="T/P/R/BP"></div>
-      <div class="field"><label>重点查体</label><textarea id="f_physical_exam" rows="3" placeholder="阳性体征及有鉴别意义的阴性体征"></textarea></div>
-    </div>
-    <div class="fgroup">
-      <div class="fgroup-title">三、辅助检查</div>
-      <div class="field"><label>辅助检查结果</label><textarea id="f_aux_exam" rows="2" placeholder="入院前已完成检查，注明机构及检查号"></textarea></div>
-    </div>
-    <div class="fgroup">
-      <div class="fgroup-title">四、拟诊讨论</div>
-      <div class="field"><label>初步诊断</label><textarea id="f_diagnosis" rows="2" placeholder="按主次排列"></textarea></div>
-      <div class="field"><label>诊断依据</label><textarea id="f_diagnosis_basis" rows="2" placeholder="支持诊断的临床表现、检查结果"></textarea></div>
-      <div class="field"><label>鉴别诊断</label><textarea id="f_differential" rows="2" placeholder="需排除的其他可能诊断"></textarea></div>
-    </div>
-    <div class="fgroup">
-      <div class="fgroup-title">五、诊疗计划</div>
-      <div class="field"><label>检查计划</label><textarea id="f_exam_plan" rows="2" placeholder="拟进一步完善的项目"></textarea></div>
-      <div class="field"><label>治疗计划</label><textarea id="f_treatment_plan" rows="2" placeholder="药物、手术、护理级别等"></textarea></div>
-    </div>
+  <div class="fgroup"><div class="title">三、辅助检查</div>
+    <div class="field"><label>辅助检查结果</label><textarea id="f6" rows="2" placeholder="入院前已完成检查"></textarea></div>
   </div>
-
-  <button class="btn-primary" id="genBtn" onclick="generate()">✨ 生成首次病程记录</button>
-  <div class="disclaimer">🔒 不收集、不存储患者身份信息 · 测试阶段无限使用</div>
+  <div class="fgroup"><div class="title">四、拟诊讨论</div>
+    <div class="field"><label>初步诊断</label><textarea id="f7" rows="2" placeholder="按主次排列"></textarea></div>
+    <div class="field"><label>诊断依据</label><textarea id="f8" rows="2" placeholder="支持诊断的临床依据"></textarea></div>
+    <div class="field"><label>鉴别诊断</label><textarea id="f9" rows="2" placeholder="需排除的其他诊断"></textarea></div>
+  </div>
+  <div class="fgroup"><div class="title">五、诊疗计划</div>
+    <div class="field"><label>检查计划</label><textarea id="f10" rows="2" placeholder="拟进一步完善的检查"></textarea></div>
+    <div class="field"><label>治疗计划</label><textarea id="f11" rows="2" placeholder="药物、手术、护理等"></textarea></div>
+  </div>
 </div>
 
-<!-- === RESULT === -->
-<div class="page" id="page-result">
-  <div class="result-card">
-    <div class="code-box">
-      <div class="code-label">📟 短码</div>
-      <div class="code-value" id="codeDisplay"></div>
-      <div class="code-hint">在电脑端 recorder 输入此码即可调出病历</div>
+<button class="btn btn-primary" id="genBtn" onclick="generate()">✨ 生成首次病程记录</button>
+
+<!-- Result -->
+<div class="result-box" id="resultBox">
+  <div class="card">
+    <div class="code-display">
+      <div class="label">📟 短码</div>
+      <div class="code" id="codeDisplay"></div>
+      <div class="tip">在电脑端输入此码即可查看</div>
     </div>
-    <div class="result-content" id="resultText"></div>
+    <div class="record-text" id="recordText"></div>
   </div>
-  <button class="btn-primary" onclick="exportForUSB()">💾 导出到 U 盘（下载 data.json）</button>
-  <button class="btn-outline" onclick="copyResult()">📋 复制病历文本</button>
-  <div class="disclaimer">⚠ AI生成草稿，请医师审核修改后使用</div>
+  <button class="btn btn-primary" onclick="exportData()">💾 导出到 U 盘（下载 data.json）</button>
+  <button class="btn btn-outline" onclick="copyRecord()">📋 复制病历文本</button>
+  <button class="btn btn-outline" onclick="newRecord()">🔄 再写一份</button>
 </div>
 
-<!-- === HISTORY === -->
-<div class="page" id="page-history">
-  <div id="historyList"></div>
-  <button class="btn-outline" onclick="exportAllForUSB()" style="margin-top:12px;">💾 导出全部记录到 U 盘</button>
-  <div class="disclaimer">本地存储，不存患者身份信息</div>
+<!-- History -->
+<div class="card" style="margin-top:20px">
+  <div style="font-weight:700;margin-bottom:12px;font-size:16px">📝 历史记录</div>
+  <div id="historyList"><div class="empty">暂无记录</div></div>
+  <button class="btn btn-outline" onclick="exportAll()" style="margin-top:8px">💾 导出全部记录</button>
 </div>
 
+<div class="disc">🔒 不收集患者身份信息 · AI生成仅供参考</div>
 <div class="toast" id="toast"></div>
 
-<script src="js/audio-sender.js"></script>
 <script>
 // ===== State =====
-const STATE = {
-  currentCode: '',
-  currentRecord: '',
-  history: JSON.parse(localStorage.getItem('mcHistory') || '[]'),
-};
+var DATA = JSON.parse(localStorage.getItem('mc2') || '[]');
+var currentCode = '';
+var currentRecord = '';
 
-// ===== Gen short code =====
+function save() { localStorage.setItem('mc2', JSON.stringify(DATA)); }
+function t(msg) { var e=document.getElementById('toast');e.textContent=msg;e.classList.add('show');setTimeout(function(){e.classList.remove('show')},1800); }
+
+// ===== Code =====
 function genCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 去掉易混淆的 0/O/1/I
-  let code = '';
-  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  // 确保不和历史重复
-  const existing = STATE.history.map(h => h.code);
-  while (existing.includes(code)) {
-    code = '';
-    for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  }
+  var c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789', code='', codes=DATA.map(function(d){return d.code});
+  do { code=''; for(var i=0;i<4;i++) code+=c[Math.floor(Math.random()*c.length)]; } while(codes.indexOf(code)>=0);
   return code;
-}
-
-// ===== Toast =====
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 1800);
-}
-
-// ===== Navigation =====
-document.querySelectorAll('.tab').forEach(t => {
-  t.addEventListener('click', function() {
-    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-    this.classList.add('active');
-    document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
-    document.getElementById('page-' + this.dataset.page).classList.add('active');
-    if (this.dataset.page === 'history') renderHistory();
-  });
-});
-
-function switchTab(name) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  const target = document.querySelector('.tab[data-page="' + name + '"]');
-  if (target) target.classList.add('active');
-  document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
-  const pageEl = document.getElementById('page-' + name);
-  if (pageEl) pageEl.classList.add('active');
-  if (name === 'history') renderHistory();
-}
-
-// ===== Voice =====
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recognition = null;
-
-document.getElementById('voiceBtn').addEventListener('mousedown', startVoice);
-document.getElementById('voiceBtn').addEventListener('mouseup', stopVoice);
-document.getElementById('voiceBtn').addEventListener('touchstart', startVoice);
-document.getElementById('voiceBtn').addEventListener('touchend', stopVoice);
-
-function startVoice(e) {
-  e.preventDefault();
-  if (!SpeechRecognition) { toast('浏览器不支持语音识别'); return; }
-  const btn = document.getElementById('voiceBtn');
-  btn.classList.add('recording'); btn.textContent = '🔴 聆听中...松手结束';
-
-  if (!recognition) {
-    recognition = new SpeechRecognition();
-    recognition.lang = 'zh-CN'; recognition.interimResults = true; recognition.continuous = true;
-    recognition.onresult = (e) => {
-      let text = '';
-      for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
-      STATE.voiceText = text;
-      const vp = document.getElementById('voicePreview');
-      vp.style.display = 'block'; vp.textContent = text;
-    };
-    recognition.onerror = () => { stopVoiceRaw(); toast('语音识别失败'); };
-  }
-  recognition.start();
-}
-
-function stopVoice(e) {
-  e && e.preventDefault();
-  stopVoiceRaw();
-}
-
-function stopVoiceRaw() {
-  const btn = document.getElementById('voiceBtn');
-  btn.classList.remove('recording'); btn.textContent = '🎤 按住口述病历信息';
-  if (recognition) recognition.stop();
-  if (STATE.voiceText) {
-    document.getElementById('fillBtn').style.display = 'inline-block';
-  }
-}
-
-function parseVoice() {
-  if (!STATE.voiceText) return;
-  const text = STATE.voiceText;
-  const patterns = [
-    { key: 'chief_complaint', re: /主诉[：:](.+?)(?:现病史|既往|查体|检查|诊断|治疗|$)/ },
-    { key: 'present_illness', re: /现病史[：:](.+?)(?:既往|查体|检查|诊断|治疗|$)/ },
-    { key: 'past_history', re: /既往史[：:](.+?)(?:查体|检查|诊断|治疗|$)/ },
-    { key: 'vital_signs', re: /(?:生命体征|查体)[：:](.+?)(?:检查|诊断|治疗|$)/ },
-  ];
-  let filled = 0;
-  for (const p of patterns) {
-    const m = text.match(p.re);
-    if (m && m[1] && m[1].trim()) {
-      document.getElementById('f_' + p.key).value = m[1].trim();
-      filled++;
-    }
-  }
-  document.getElementById('fillBtn').style.display = 'none';
-  document.getElementById('voicePreview').style.display = 'none';
-  STATE.voiceText = '';
-  if (filled > 0) toast('已自动填入 ' + filled + ' 个字段，请检查修正');
-  else toast('未能解析字段，请手动填写');
 }
 
 // ===== Generate =====
 async function generate() {
-  const keys = ['chief_complaint','present_illness','past_history','vital_signs','physical_exam','aux_exam','diagnosis','diagnosis_basis','differential','exam_plan','treatment_plan'];
-  const fields = {};
-  for (const k of keys) fields[k] = document.getElementById('f_' + k).value.trim();
-  if (!Object.values(fields).some(v => v)) { toast('请至少填写一项信息'); return; }
+  var keys=['f1','f2','f3','f4','f5','f6','f7','f8','f9','f10','f11'];
+  var fields={};
+  for(var i=0;i<keys.length;i++) fields[keys[i]]=document.getElementById(keys[i]).value.trim();
+  var any=Object.values(fields).some(function(v){return v;});
+  if(!any){t('请至少填写一项信息');return;}
 
-  const btn = document.getElementById('genBtn');
-  btn.disabled = true; btn.textContent = '⏳ AI生成中...';
+  var btn=document.getElementById('genBtn');
+  btn.disabled=true;btn.textContent='⏳ AI生成中...';
 
-  const systemPrompt = '你是一名经验丰富的临床医师，请根据以下信息生成一份规范的「首次病程记录」。要求：1.严格使用医学术语 2.按病例特点→拟诊讨论→诊疗计划组织 3.符合《病历书写基本规范》 4.阿拉伯数字和24小时制 5.不要出现AI字样 6.缺失信息标记【待补充】';
+  var labels={f1:'主诉',f2:'现病史',f3:'既往史',f4:'生命体征',f5:'体格检查',f6:'辅助检查',f7:'初步诊断',f8:'诊断依据',f9:'鉴别诊断',f10:'检查计划',f11:'治疗计划'};
+  var parts=[];
+  for(var i=0;i<keys.length;i++){if(fields[keys[i]]) parts.push(labels[keys[i]]+'：'+fields[keys[i]]);}
+  var summary=parts.join('\n');
 
-  let record;
-  try {
-    const res = await fetch('https://ai-medical-api.vercel.app/api/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ systemPrompt, fields }),
-    });
-    const data = await res.json();
-    record = data.record;
-  } catch {
-    record = buildFallback(fields);
+  var systemPrompt='你是一名经验丰富的临床医师，请根据以下信息生成规范的「首次病程记录」。按病例特点→拟诊讨论→诊疗计划组织。严格使用医学术语，符合《病历书写基本规范》，阿拉伯数字和24小时制，缺失信息标记【待补充】，不出现AI字样。';
+
+  var record;
+  try{
+    var res=await fetch('https://ai-medical-api.vercel.app/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({systemPrompt:systemPrompt,fields:fields})});
+    var d=await res.json();
+    record=d.record;
+  }catch(e){
+    // Fallback
+    record='【首次病程记录 - 草稿】\n\n一、病例特点\n'+(fields.f1?'主诉：'+fields.f1+'\n':'')+(fields.f2?'现病史：'+fields.f2+'\n':'')+(fields.f3?'既往史：'+fields.f3+'\n':'')+'\n二、体格检查\n'+(fields.f4?'生命体征：'+fields.f4+'\n':'')+(fields.f5?'查体：'+fields.f5+'\n':'')+'\n三、辅助检查\n'+(fields.f6?fields.f6+'\n':'')+'\n四、拟诊讨论\n'+(fields.f7?'初步诊断：'+fields.f7+'\n':'')+(fields.f8?'诊断依据：'+fields.f8+'\n':'')+(fields.f9?'鉴别诊断：'+fields.f9+'\n':'')+'\n五、诊疗计划\n'+(fields.f10?'检查计划：'+fields.f10+'\n':'')+(fields.f11?'治疗计划：'+fields.f11+'\n':'')+'\n※ AI生成草稿（脱机模式），请医师审核修改后使用';
   }
 
-  const code = genCode();
-  STATE.currentCode = code;
-  STATE.currentRecord = record;
-  document.getElementById('codeDisplay').textContent = code;
-  document.getElementById('resultText').textContent = record;
+  currentCode=genCode();
+  currentRecord=record;
+  document.getElementById('codeDisplay').textContent=currentCode;
+  document.getElementById('recordText').textContent=record;
+  document.getElementById('resultBox').classList.add('show');
+  document.getElementById('formCard').style.display='none';
+  document.getElementById('genBtn').style.display='none';
+  window.scrollTo({top:0,behavior:'smooth'});
 
-  STATE.history.unshift({ code, fields, record, time: new Date().toISOString() });
-  if (STATE.history.length > 200) STATE.history = STATE.history.slice(0, 200);
-  localStorage.setItem('mcHistory', JSON.stringify(STATE.history));
+  DATA.unshift({code:currentCode,record:record,time:new Date().toISOString()});
+  if(DATA.length>200)DATA=DATA.slice(0,200);
+  save();
+  renderHistory();
 
-  switchTab('result');
-  btn.disabled = false; btn.textContent = '✨ 生成首次病程记录';
-}
-
-function buildFallback(fields) {
-  return `【首次病程记录 - 脱机草稿】
-
-一、病例特点
-主诉：${fields.chief_complaint || '【待补充】'}
-现病史：${fields.present_illness || '【待补充】'}
-既往史：${fields.past_history || '【待补充】'}
-生命体征：${fields.vital_signs || '【待补充】'}
-体格检查：${fields.physical_exam || '【待补充】'}
-辅助检查：${fields.aux_exam || '【待补充】'}
-
-二、拟诊讨论
-初步诊断：${fields.diagnosis || '【待补充】'}
-诊断依据：${fields.diagnosis_basis || '【待补充】'}
-鉴别诊断：${fields.differential || '【待补充】'}
-
-三、诊疗计划
-检查计划：${fields.exam_plan || '【待补充】'}
-治疗计划：${fields.treatment_plan || '【待补充】'}
-
-※ AI生成草稿（脱机模式），请医师审核修改后使用`;
+  btn.disabled=false;btn.textContent='✨ 生成首次病程记录';
 }
 
 // ===== Export =====
-function exportForUSB() {
-  downloadDataJSON({ [STATE.currentCode]: STATE.currentRecord });
+function exportData() {
+  var json='window.DATA='+JSON.stringify((function(){var o={};o[currentCode]=currentRecord;return o;})())+';';
+  download(json);
+  t('data.json 已下载，放入U盘与 recorder.html 同级');
 }
 
-function exportAllForUSB() {
-  const data = {};
-  STATE.history.forEach(h => { data[h.code] = h.record; });
-  downloadDataJSON(data);
+function exportAll() {
+  var o={};
+  DATA.forEach(function(d){o[d.code]=d.record;});
+  download('window.DATA='+JSON.stringify(o)+';');
+  t('全部记录已导出');
 }
 
-function downloadDataJSON(data) {
-  const json = 'window.DATA=' + JSON.stringify(data) + ';';
-  const blob = new Blob([json], { type: 'application/octet-stream' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'data.json'; document.body.appendChild(a);
-  a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-  toast('data.json 已下载，请放入U盘与 recorder.html 同级');
+function download(str) {
+  var b=new Blob([str],{type:'application/octet-stream'});
+  var u=URL.createObjectURL(b);
+  var a=document.createElement('a');
+  a.href=u;a.download='data.json';document.body.appendChild(a);
+  a.click();document.body.removeChild(a);URL.revokeObjectURL(u);
 }
 
-// ===== Copy =====
-function copyResult() {
-  navigator.clipboard.writeText(STATE.currentRecord).then(() => toast('已复制到剪贴板'))
-    .catch(() => toast('复制失败'));
+// ===== New / Copy =====
+function newRecord() {
+  document.getElementById('resultBox').classList.remove('show');
+  document.getElementById('formCard').style.display='';
+  document.getElementById('genBtn').style.display='';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function copyRecord() {
+  navigator.clipboard.writeText(currentRecord).then(function(){t('已复制')}).catch(function(){t('复制失败')});
 }
 
 // ===== History =====
 function renderHistory() {
-  const el = document.getElementById('historyList');
-  if (!STATE.history.length) { el.innerHTML = '<div class="empty">📝 暂无记录</div>'; return; }
-  el.innerHTML = STATE.history.map((h, i) =>
-    '<div class="h-item">'
-    + '<div class="meta"><span class="code">' + h.code + '</span><span>' + fmtTime(h.time) + '</span></div>'
-    + '<div class="preview">' + h.record.replace(/</g,'&lt;') + '</div>'
-    + '<div class="btn-row"><button onclick="viewHistory(' + i + ')">📄 查看</button>'
-    + '<button onclick="copyHistory(' + i + ')">📋 复制</button></div></div>'
-  ).join('');
+  var el=document.getElementById('historyList');
+  if(!DATA.length){el.innerHTML='<div class="empty">暂无记录</div>';return;}
+  el.innerHTML=DATA.map(function(d,i){
+    return '<div class="h-item">'
+    +'<div class="top"><span class="h-code">'+d.code+'</span><span class="h-time">'+fmt(d.time)+'</span></div>'
+    +'<div class="h-text">'+d.record.replace(/</g,'&lt;')+'</div>'
+    +'<div class="h-btns"><button onclick="viewH('+i+')">查看</button><button onclick="copyH('+i+')">复制</button></div></div>';
+  }).join('');
 }
 
-function viewHistory(i) {
-  STATE.currentCode = STATE.history[i].code;
-  STATE.currentRecord = STATE.history[i].record;
-  document.getElementById('codeDisplay').textContent = STATE.currentCode;
-  document.getElementById('resultText').textContent = STATE.currentRecord;
-  switchTab('result');
+function viewH(i){currentCode=DATA[i].code;currentRecord=DATA[i].record;document.getElementById('codeDisplay').textContent=currentCode;document.getElementById('recordText').textContent=currentRecord;document.getElementById('resultBox').classList.add('show');document.getElementById('formCard').style.display='none';document.getElementById('genBtn').style.display='none';window.scrollTo({top:0,behavior:'smooth'});}
+function copyH(i){navigator.clipboard.writeText(DATA[i].record).then(function(){t('已复制')});}
+function fmt(iso){var d=new Date(iso),n=new Date(),df=n-d;if(df<6e4)return'刚刚';if(df<36e5)return Math.floor(df/6e4)+'分钟前';if(df<864e5)return Math.floor(df/36e5)+'小时前';return (d.getMonth()+1)+'月'+d.getDate()+'日';}
+
+// ===== Voice =====
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+var rec=null;
+var voiceText='';
+
+document.getElementById('voiceBtn').addEventListener('mousedown',startV);
+document.getElementById('voiceBtn').addEventListener('mouseup',stopV);
+document.getElementById('voiceBtn').addEventListener('touchstart',function(e){e.preventDefault();startV();});
+document.getElementById('voiceBtn').addEventListener('touchend',function(e){e.preventDefault();stopV();});
+
+function startV(){
+  if(!SR){t('浏览器不支持语音识别');return;}
+  var b=document.getElementById('voiceBtn');b.classList.add('rec');b.textContent='🔴 聆听中...松手结束';
+  if(!rec){rec=new SR();rec.lang='zh-CN';rec.interimResults=true;rec.continuous=true;rec.onresult=function(e){voiceText='';for(var i=0;i<e.results.length;i++)voiceText+=e.results[i][0].transcript;var o=document.getElementById('voiceOut');o.style.display='block';o.textContent=voiceText;};rec.onerror=function(){stopVRaw();};}
+  rec.start();
 }
 
-function copyHistory(i) {
-  navigator.clipboard.writeText(STATE.history[i].record).then(() => toast('已复制'));
+function stopV(){stopVRaw();}
+function stopVRaw(){document.getElementById('voiceBtn').classList.remove('rec');document.getElementById('voiceBtn').textContent='🎤 按住口述病历信息';if(rec)rec.stop();if(voiceText)document.getElementById('voiceFillBtn').style.display='block';}
+
+function parseVoice(){
+  if(!voiceText)return;
+  var maps=[{k:'f1',r:/主诉[：:](.+?)(?:现病史|既往|查体|检查|诊断|治疗|$)/},{k:'f2',r:/现病史[：:](.+?)(?:既往|查体|检查|诊断|治疗|$)/},{k:'f3',r:/既往史[：:](.+?)(?:查体|检查|诊断|治疗|$)/},{k:'f4',r:/(?:生命体征|查体)[：:](.+?)(?:检查|诊断|治疗|$)/}];
+  var n=0;
+  maps.forEach(function(m){var r=voiceText.match(m.r);if(r&&r[1]&&r[1].trim()){document.getElementById(m.k).value=r[1].trim();n++;}});
+  document.getElementById('voiceFillBtn').style.display='none';document.getElementById('voiceOut').style.display='none';voiceText='';
+  t(n>0?'已填入'+n+'个字段':'未能解析，请手动填写');
 }
 
-function fmtTime(iso) {
-  const d = new Date(iso), n = new Date(), diff = n - d;
-  if (diff < 6e4) return '刚刚';
-  if (diff < 36e5) return Math.floor(diff/6e4) + '分钟前';
-  if (diff < 864e5) return Math.floor(diff/36e5) + '小时前';
-  return (d.getMonth()+1) + '月' + d.getDate() + '日';
-}
-
-// ===== PWA =====
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
-}
+renderHistory();
 </script>
 </body>
 </html>
