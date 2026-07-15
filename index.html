@@ -4,413 +4,205 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="病历助手">
-<title>AI 病历草稿助手</title>
+<title>AI病历草稿助手</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;font-size:15px;color:#1E293B;background:#F1F5F9;padding:12px;padding-bottom:40px}
-h1{font-size:20px;text-align:center;margin:12px 0;color:#2563EB}
-.sub{text-align:center;font-size:13px;color:#64748B;margin-bottom:16px}
-.badge{text-align:center;font-size:12px;color:#10B981;background:#ECFDF5;display:table;margin:0 auto 12px;padding:4px 14px;border-radius:12px}
+body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;font-size:15px;color:#1E293B;background:#F1F5F9;padding:12px 12px 40px}
+h1{font-size:20px;text-align:center;margin:12px 0 4px;color:#2563EB}
+.sub{text-align:center;font-size:13px;color:#64748B;margin-bottom:12px}
 
 .card{background:#FFF;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
-
-.fgroup{margin-bottom:12px}
-.fgroup .title{font-size:15px;font-weight:700;color:#2563EB;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #E2E8F0}
-.field{margin-bottom:10px}
-.field label{display:block;font-size:13px;font-weight:600;margin-bottom:3px}
-.field textarea,.field input{width:100%;padding:10px;border:1.5px solid #E2E8F0;border-radius:10px;font-size:14px;line-height:1.5;font-family:inherit;resize:vertical;background:#FAFAFA}
-.field textarea:focus,.field input:focus{border-color:#2563EB;background:#FFF;outline:none}
+.sec-title{font-size:15px;font-weight:700;color:#2563EB;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #E2E8F0}
+.row{margin-bottom:10px}
+.row:last-child{margin-bottom:0}
+.row label{display:block;font-size:13px;font-weight:600;margin-bottom:3px}
+.row textarea,.row input{width:100%;padding:10px;border:1.5px solid #E2E8F0;border-radius:10px;font-size:14px;line-height:1.5;font-family:inherit;resize:vertical;background:#FAFAFA}
+.row textarea:focus,.row input:focus{border-color:#2563EB;background:#FFF;outline:none}
 
 .btn{display:block;width:100%;padding:15px;border:none;border-radius:12px;font-size:16px;font-weight:600;text-align:center;cursor:pointer;margin-top:10px}
-.btn-primary{background:#2563EB;color:#FFF}
-.btn-primary:active{opacity:.85}
-.btn-primary:disabled{opacity:.4}
-.btn-outline{background:#FFF;color:#2563EB;border:1.5px solid #2563EB}
-.btn-danger{background:#FFF;color:#EF4444;border:1.5px solid #EF4444}
+.btn-blue{background:#2563EB;color:#FFF}
+.btn-blue:active{opacity:.85}
+.btn-blue:disabled{opacity:.4;pointer-events:none}
+.btn-white{background:#FFF;color:#2563EB;border:1.5px solid #2563EB}
 
-.voice-btn{display:block;width:100%;padding:14px;border:2px dashed #E2E8F0;border-radius:12px;background:#FFF;color:#2563EB;font-size:15px;font-weight:500;text-align:center;cursor:pointer;margin-bottom:10px}
-.voice-btn.rec{background:#FEF2F2;border-color:#EF4444;color:#EF4444}
-.voice-out{padding:10px;background:#F8FAFC;border-radius:10px;font-size:14px;line-height:1.5;margin-bottom:8px;display:none}
+#resultArea{display:none}
+#resultArea.show{display:block}
 
-/* Result */
-#resultBox{display:none}
-#resultBox.show{display:block}
+.qr-box{text-align:center;padding:16px 0}
+.qr-box canvas{display:block;margin:0 auto;max-width:280px}
+.qr-hint{font-size:13px;color:#64748B;margin-bottom:10px}
+.qr-tip{font-size:14px;color:#2563EB;font-weight:600;margin-top:8px}
 
-/* QR */
-.qr-section{text-align:center;padding:20px 0}
-.qr-section .qr-hint{font-size:13px;color:#64748B;margin-bottom:12px}
-.qr-img{display:block;margin:0 auto;max-width:280px;width:100%;height:auto}
-.qr-section .scan-tip{font-size:14px;color:#2563EB;font-weight:600;margin-top:10px}
+.record{font-size:15px;line-height:2;white-space:pre-line;word-break:break-all;border-top:1px solid #E2E8F0;margin-top:14px;padding-top:14px}
 
-/* Record text */
-.record-text{font-size:15px;line-height:2;white-space:pre-line;word-break:break-all}
-.record-text.big{font-size:20px;line-height:2.2}
-
-/* Segmented QR - multiple pages */
-.seg-hint{text-align:center;font-size:13px;color:#D97706;padding:10px;background:#FFFBEB;border-radius:10px;margin-bottom:10px}
-.seg-nav{display:flex;gap:8px;justify-content:center;align-items:center;margin:10px 0}
-.seg-nav button{padding:10px 20px;background:#DBEAFE;color:#2563EB;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
-.seg-nav button:disabled{opacity:0.3}
-.seg-nav span{font-size:14px;color:#64748B}
-
-.h-item{background:#FFF;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
-.h-item .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.h-item .h-time{font-size:12px;color:#94A3B8}
-.h-item .h-text{font-size:14px;line-height:1.6;color:#1E293B;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.h-item .h-btns{margin-top:8px;text-align:right}
-.h-item .h-btns button{padding:6px 14px;background:#DBEAFE;color:#2563EB;border:none;border-radius:6px;font-size:13px;margin-left:6px;cursor:pointer}
-.empty{text-align:center;padding:40px;color:#94A3B8;font-size:14px}
+.deco{text-align:center;font-size:12px;color:#94A3B8;padding:16px 0}
 
 .toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);color:#FFF;padding:12px 24px;border-radius:10px;font-size:14px;z-index:999;pointer-events:none;opacity:0;transition:opacity .3s}
 .toast.show{opacity:1}
-.disc{text-align:center;font-size:12px;color:#94A3B8;padding:16px 0}
 </style>
 </head>
 <body>
 
 <h1>📋 AI 病历草稿助手</h1>
-<div class="sub">首次病程记录 · 生成 → 扫码枪扫入EMR</div>
-<div class="badge">🔬 测试阶段 · 无限使用</div>
+<div class="sub">首次病程记录 · 扫码枪录入 · 测试版无限使用</div>
 
-<!-- Voice -->
-<div class="card">
-  <div class="voice-btn" id="voiceBtn">🎤 按住口述病历信息</div>
-  <div class="voice-out" id="voiceOut"></div>
-  <button class="btn-outline" id="voiceFillBtn" style="display:none;margin-top:6px" onclick="parseVoice()">🤖 AI解析填入</button>
-</div>
-
-<!-- Form -->
 <div class="card" id="formCard">
-  <div class="fgroup"><div class="title">一、病例特点</div>
-    <div class="field"><label>主诉</label><textarea id="f1" rows="2" placeholder="主要症状 + 持续时间"></textarea></div>
-    <div class="field"><label>现病史</label><textarea id="f2" rows="3" placeholder="起病情况、症状特点、诊治经过"></textarea></div>
-    <div class="field"><label>既往史</label><textarea id="f3" rows="2" placeholder="既往疾病、手术、过敏史"></textarea></div>
-  </div>
-  <div class="fgroup"><div class="title">二、体格检查</div>
-    <div class="field"><label>生命体征</label><input id="f4" placeholder="T/P/R/BP"></div>
-    <div class="field"><label>重点查体</label><textarea id="f5" rows="2" placeholder="阳性体征及阴性体征"></textarea></div>
-  </div>
-  <div class="fgroup"><div class="title">三、辅助检查</div>
-    <div class="field"><label>辅助检查结果</label><textarea id="f6" rows="2" placeholder="入院前已完成检查"></textarea></div>
-  </div>
-  <div class="fgroup"><div class="title">四、拟诊讨论</div>
-    <div class="field"><label>初步诊断</label><textarea id="f7" rows="2" placeholder="按主次排列"></textarea></div>
-    <div class="field"><label>诊断依据</label><textarea id="f8" rows="2" placeholder="支持诊断的临床依据"></textarea></div>
-    <div class="field"><label>鉴别诊断</label><textarea id="f9" rows="2" placeholder="需排除的其他诊断"></textarea></div>
-  </div>
-  <div class="fgroup"><div class="title">五、诊疗计划</div>
-    <div class="field"><label>检查计划</label><textarea id="f10" rows="2" placeholder="拟进一步完善的检查"></textarea></div>
-    <div class="field"><label>治疗计划</label><textarea id="f11" rows="2" placeholder="药物、手术、护理等"></textarea></div>
-  </div>
+  <div class="sec-title">一、病例特点</div>
+  <div class="row"><label>主诉</label><textarea id="a" rows="2" placeholder="主要症状 + 持续时间"></textarea></div>
+  <div class="row"><label>现病史</label><textarea id="b" rows="3" placeholder="起病情况、症状特点、诊治经过"></textarea></div>
+  <div class="row"><label>既往史</label><textarea id="c" rows="2" placeholder="既往疾病、手术、过敏史"></textarea></div>
+
+  <div class="sec-title" style="margin-top:14px">二、体格检查</div>
+  <div class="row"><label>生命体征</label><input id="d" placeholder="T/P/R/BP"></div>
+  <div class="row"><label>重点查体</label><textarea id="e" rows="2" placeholder="阳性体征及阴性体征"></textarea></div>
+
+  <div class="sec-title" style="margin-top:14px">三、辅助检查</div>
+  <div class="row"><label>辅助检查结果</label><textarea id="f" rows="2" placeholder="入院前已完成的检查"></textarea></div>
+
+  <div class="sec-title" style="margin-top:14px">四、拟诊讨论</div>
+  <div class="row"><label>初步诊断</label><textarea id="g" rows="2" placeholder="按主次排列"></textarea></div>
+  <div class="row"><label>诊断依据</label><textarea id="h" rows="2" placeholder="支持诊断的临床依据"></textarea></div>
+  <div class="row"><label>鉴别诊断</label><textarea id="i" rows="2" placeholder="需排除的其他诊断"></textarea></div>
+
+  <div class="sec-title" style="margin-top:14px">五、诊疗计划</div>
+  <div class="row"><label>检查计划</label><textarea id="j" rows="2" placeholder="拟进一步完善的检查"></textarea></div>
+  <div class="row"><label>治疗计划</label><textarea id="k" rows="2" placeholder="药物、手术、护理等"></textarea></div>
 </div>
 
-<button class="btn btn-primary" id="genBtn" onclick="generate()">✨ 生成首次病程记录</button>
+<button class="btn btn-blue" id="genBtn" onclick="go()">✨ 生成首次病程记录</button>
 
-<!-- Result -->
-<div id="resultBox">
+<div id="resultArea">
   <div class="card">
-    <div id="qrContainer">
-      <div class="qr-section">
-        <div class="qr-hint">📟 用扫码枪扫此二维码 → 文本自动进入EMR</div>
-        <div id="qrCode"></div>
-        <div class="scan-tip">🔫 扫码枪即插即用，无需驱动</div>
-        <div id="segNav" class="seg-nav" style="display:none"></div>
-      </div>
+    <div class="qr-box">
+      <div class="qr-hint">📟 扫码枪扫此二维码 → 文本自动录入EMR</div>
+      <div id="qrCanvas"></div>
+      <div class="qr-tip">🔫 USB扫码枪即插即用，无需驱动</div>
     </div>
-    <div style="border-top:1px solid #E2E8F0;margin:16px 0;padding-top:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="font-size:13px;color:#64748B">📄 病历文本</span>
-        <button onclick="toggleBig()" style="background:none;border:1px solid #E2E8F0;border-radius:6px;padding:4px 12px;font-size:12px;color:#64748B;cursor:pointer" id="bigBtn">🔍 大字模式</button>
-      </div>
-      <div class="record-text" id="recordText"></div>
-    </div>
+    <div class="record" id="recordText"></div>
   </div>
-  <button class="btn btn-primary" onclick="copyRecord()">📋 复制病历</button>
-  <button class="btn btn-outline" onclick="newRecord()">🔄 再写一份</button>
+  <button class="btn btn-blue" onclick="cp()">📋 复制病历</button>
+  <button class="btn btn-white" onclick="again()">🔄 再写一份</button>
 </div>
 
-<!-- History -->
-<div class="card" style="margin-top:20px">
-  <div style="font-weight:700;margin-bottom:12px;font-size:16px">📝 历史记录</div>
-  <div id="historyList"><div class="empty">暂无记录</div></div>
-  <button class="btn btn-danger" onclick="clearHistory()" style="margin-top:8px">🗑 清空记录</button>
-</div>
-
-<div class="disc">🔒 不收集患者身份信息 · AI生成仅供参考 · 扫码枪即插即用</div>
+<div class="deco">🔒 不收集患者身份信息 · AI生成仅供参考</div>
 <div class="toast" id="toast"></div>
 
-<!-- QR Code Generator (tiny, embedded) -->
 <script>
-// Minimal QR Code Generator - encodes text as QR code on canvas
-var QR = (function(){
-  // QR constants for alphanumeric mode
-  function make(data, size) {
-    size = size || 300;
-    var canvas = document.createElement('canvas');
-    canvas.width = canvas.height = size;
-    var ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#FFF';
-    ctx.fillRect(0, 0, size, size);
+// ===== helpers =====
+var $ = function(id){return document.getElementById(id);};
+var T = function(m){var e=$('toast');e.textContent=m;e.classList.add('show');setTimeout(function(){e.classList.remove('show')},1500);};
+var DSK = 'sk-e5cf7e638d824e5dbb8fc0d7468c95aa';
+var cur = '';
 
-    // Use dependency-free approach: encode via Google Charts API as fallback
-    // Or use a simple barcode approach
-    var img = new Image();
-    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size='+size+'x'+size+'&data='+encodeURIComponent(data);
-    img.onload = function() {
-      ctx.drawImage(img, 0, 0, size, size);
-    };
-    return canvas;
-  }
-
-  // Also try local generation via qrcode-generator if available
-  function makeLocal(text) {
-    var canvas = document.createElement('canvas');
-    var size = 280;
-    canvas.width = canvas.height = size;
-    var ctx = canvas.getContext('2d');
-
-    // Fill white background
-    ctx.fillStyle = '#FFF';
-    ctx.fillRect(0, 0, size, size);
-
-    // Generate QR matrix using simple byte encoding
-    // This is a simplified QR encoder for short texts
-    var bytes = [], i;
-    for (i = 0; i < text.length; i++) {
-      var c = text.charCodeAt(i);
-      if (c < 128) bytes.push(c);
-      else if (c < 2048) { bytes.push(192 | (c >> 6)); bytes.push(128 | (c & 63)); }
-      else { bytes.push(224 | (c >> 12)); bytes.push(128 | ((c >> 6) & 63)); bytes.push(128 | (c & 63)); }
-    }
-
-    // Use external API for reliability
-    var img = new Image();
-    var url = 'https://api.qrserver.com/v1/create-qr-code/?size='+size+'x'+size+'&data='+encodeURIComponent(text);
-    img.src = url;
-    return { canvas: canvas, img: img };
-  }
-
-  return { make: make, makeLocal: makeLocal };
-})();
-</script>
-
-<script>
-// ===== State =====
-var DATA = JSON.parse(localStorage.getItem('mc3') || '[]');
-var currentRecord = '';
-var bigMode = false;
-
-function save() { localStorage.setItem('mc3', JSON.stringify(DATA)); }
-function t(msg) { var e=document.getElementById('toast');e.textContent=msg;e.classList.add('show');setTimeout(function(){e.classList.remove('show')},1800); }
-
-// ===== Segment QR (split long text) =====
-var segments = [];
-var currentSeg = 0;
-
-function segmentText(text, maxLen) {
-  maxLen = maxLen || 1000; // ~1KB per QR for safety
-  var segs = [];
-  var remaining = text;
-  while (remaining.length > 0) {
-    if (remaining.length <= maxLen) { segs.push(remaining); break; }
-    // Find a good split point (newline or period)
-    var splitAt = maxLen;
-    var lastNL = remaining.lastIndexOf('\n', maxLen);
-    var lastPD = remaining.lastIndexOf('。', maxLen);
-    var lastCM = remaining.lastIndexOf('；', maxLen);
-    var best = Math.max(lastNL, lastPD, lastCM);
-    if (best > maxLen * 0.5) splitAt = best + 1;
-    segs.push(remaining.substring(0, splitAt));
-    remaining = remaining.substring(splitAt);
-  }
-  return segs;
+// ===== build fallback =====
+function build(f){
+  var p=[];
+  p.push('【首次病程记录】');p.push('');
+  p.push('一、病例特点');
+  if(f.a)p.push('主诉：'+f.a);
+  if(f.b)p.push('现病史：'+f.b);
+  if(f.c)p.push('既往史：'+f.c);
+  p.push('');
+  p.push('二、体格检查');
+  if(f.d)p.push('生命体征：'+f.d);
+  if(f.e)p.push('重点查体：'+f.e);
+  p.push('');
+  p.push('三、辅助检查');
+  if(f.f)p.push(f.f);
+  else p.push('【待补充】');
+  p.push('');
+  p.push('四、拟诊讨论');
+  if(f.g)p.push('初步诊断：'+f.g);
+  else p.push('初步诊断：【待补充】');
+  if(f.h)p.push('诊断依据：'+f.h);
+  if(f.i)p.push('鉴别诊断：'+f.i);
+  p.push('');
+  p.push('五、诊疗计划');
+  if(f.j)p.push('检查计划：'+f.j);
+  if(f.k)p.push('治疗计划：'+f.k);
+  p.push('');
+  p.push('※ AI生成草稿，请医师审核修改后使用');
+  return p.join('\n');
 }
 
-function showQR(text) {
-  var container = document.getElementById('qrCode');
-  container.innerHTML = '';
-
-  segments = text.length > 1200 ? segmentText(text, 1200) : [text];
-
-  if (segments.length > 1) {
-    // Show segment navigation
-    var nav = document.getElementById('segNav');
-    nav.style.display = 'flex';
-    nav.innerHTML = '<button onclick="prevSeg()" id="prevBtn" disabled>◀ 上一段</button><span id="segInfo"></span><button onclick="nextSeg()" id="nextBtn">下一段 ▶</button>';
-    updateSegNav();
-  } else {
-    document.getElementById('segNav').style.display = 'none';
-  }
-
-  renderQR(0);
+// ===== QR code =====
+function showQR(text){
+  var c=$('qrCanvas');c.innerHTML='';
+  var cv=document.createElement('canvas');
+  cv.width=cv.height=300;
+  c.appendChild(cv);
+  var ctx=cv.getContext('2d');
+  ctx.fillStyle='#FFF';ctx.fillRect(0,0,300,300);
+  var img=document.createElement('img');
+  img.onload=function(){ctx.drawImage(img,0,0,300,300);};
+  img.src='https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=8&data='+encodeURIComponent(text);
 }
 
-function updateSegNav() {
-  document.getElementById('segInfo').textContent = (currentSeg + 1) + ' / ' + segments.length;
-  document.getElementById('prevBtn').disabled = currentSeg === 0;
-  document.getElementById('nextBtn').disabled = currentSeg >= segments.length - 1;
+// ===== show result =====
+function show(text){
+  cur=text;
+  $('recordText').textContent=text;
+  $('resultArea').classList.add('show');
+  $('formCard').style.display='none';
+  $('genBtn').style.display='none';
+  showQR(text);
+  window.scrollTo(0,0);
 }
 
-function prevSeg() { if(currentSeg>0){currentSeg--;renderQR(currentSeg);updateSegNav();} }
-function nextSeg() { if(currentSeg<segments.length-1){currentSeg++;renderQR(currentSeg);updateSegNav();} }
+// ===== generate =====
+function go(){
+  var f={a:$('a').value.trim(),b:$('b').value.trim(),c:$('c').value.trim(),
+         d:$('d').value.trim(),e:$('e').value.trim(),f:$('f').value.trim(),
+         g:$('g').value.trim(),h:$('h').value.trim(),i:$('i').value.trim(),
+         j:$('j').value.trim(),k:$('k').value.trim()};
+  if(!Object.values(f).some(function(v){return v;})){T('请至少填写一项信息');return;}
 
-function renderQR(idx) {
-  var container = document.getElementById('qrCode');
-  container.innerHTML = '';
+  var btn=$('genBtn');btn.disabled=true;btn.textContent='⏳ 生成中...';
 
-  var segText = segments[idx];
-  if (segments.length > 1) {
-    segText = '(' + (idx + 1) + '/' + segments.length + ') ' + segText;
-  }
-
-  var canvas = document.createElement('canvas');
-  canvas.width = canvas.height = 280;
-  var ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#FFF';
-  ctx.fillRect(0, 0, 280, 280);
-
-  var img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.onload = function() {
-    ctx.drawImage(img, 0, 0, 280, 280);
-  };
-  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=8&data=' + encodeURIComponent(segText);
-  canvas.className = 'qr-img';
-  container.appendChild(canvas);
-}
-
-// ===== Generate =====
-function generate() {
-  var fields={},keys=['f1','f2','f3','f4','f5','f6','f7','f8','f9','f10','f11'];
-  for(var i=0;i<keys.length;i++){fields[keys[i]]=document.getElementById(keys[i]).value.trim();}
-  var has=keys.some(function(k){return fields[k];});
-  if(!has){t('请至少填写一项信息');return;}
-
-  var btn=document.getElementById('genBtn');
-  btn.disabled=true;btn.textContent='⏳ 生成中...';
-
-  // 先显示本地版本
-  var record=buildFallback(fields);
-  showResult(record);
+  // 1. 立刻显示脱机版本
+  var text=build(f);
+  show(text);
   btn.disabled=false;btn.textContent='✨ 生成首次病程记录';
 
-  // 后台尝试 AI 生成，成功则更新
-  tryCallAI(fields);
-}
+  // 2. 后台调AI，成功则替换
+  var sum='';
+  if(f.a)sum+='主诉：'+f.a+'\n';if(f.b)sum+='现病史：'+f.b+'\n';
+  if(f.c)sum+='既往史：'+f.c+'\n';if(f.d)sum+='生命体征：'+f.d+'\n';
+  if(f.e)sum+='查体：'+f.e+'\n';if(f.f)sum+='辅助检查：'+f.f+'\n';
+  if(f.g)sum+='诊断：'+f.g+'\n';if(f.h)sum+='诊断依据：'+f.h+'\n';
+  if(f.i)sum+='鉴别诊断：'+f.i+'\n';if(f.j)sum+='检查计划：'+f.j+'\n';
+  if(f.k)sum+='治疗计划：'+f.k;
 
-function showResult(record) {
-  currentRecord=record;
-  document.getElementById('recordText').innerHTML=record.replace(/\n/g,'<br>');
-  document.getElementById('resultBox').classList.add('show');
-  document.getElementById('formCard').style.display='none';
-  document.getElementById('genBtn').style.display='none';
-  currentSeg=0;showQR(record);
-  window.scrollTo({top:0,behavior:'smooth'});
-  DATA.unshift({record:record,time:new Date().toISOString()});
-  if(DATA.length>200)DATA=DATA.slice(0,200);
-  save();renderHistory();
-}
+  var data=JSON.stringify({
+    model:'deepseek-chat',
+    messages:[
+      {role:'system',content:'你是一位经验丰富的中国临床医师，请根据以下信息生成规范的「首次病程记录」。按病例特点→拟诊讨论→诊疗计划组织。专业术语，符合《病历书写基本规范》。缺失信息标注【待补充】。'},
+      {role:'user',content:'请根据以下患者信息，生成规范的首次病程记录：\n\n'+sum}
+    ],
+    temperature:0.3,max_tokens:1200
+  });
 
-function tryCallAI(fields) {
-  var summary='';
-  if(fields.f1)summary+='主诉：'+fields.f1+'\n';
-  if(fields.f2)summary+='现病史：'+fields.f2+'\n';
-  if(fields.f3)summary+='既往史：'+fields.f3+'\n';
-  if(fields.f4)summary+='生命体征：'+fields.f4+'\n';
-  if(fields.f5)summary+='查体：'+fields.f5+'\n';
-  if(fields.f6)summary+='辅助检查：'+fields.f6+'\n';
-  if(fields.f7)summary+='初步诊断：'+fields.f7+'\n';
-  if(fields.f8)summary+='诊断依据：'+fields.f8+'\n';
-  if(fields.f9)summary+='鉴别诊断：'+fields.f9+'\n';
-  if(fields.f10)summary+='检查计划：'+fields.f10+'\n';
-  if(fields.f11)summary+='治疗计划：'+fields.f11;
-
-  var systemPrompt='按病例特点→拟诊讨论→诊疗计划组织，生成规范的首次病程记录。专业术语，符合规范。';
-  var body=JSON.stringify({model:'deepseek-chat',messages:[{role:'system',content:'你是经验丰富的中国临床医师。'},{role:'user',content:systemPrompt+'\n\n患者信息：\n'+summary}],temperature:0.3,max_tokens:1200});
-
-  fetch('https://api.deepseek.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer sk-e5cf7e638d824e5dbb8fc0d7468c95aa'},body:body})
-  .then(function(r){return r.json();})
-  .then(function(d){
-    if(d.choices&&d.choices[0]){
-      var aiRecord=d.choices[0].message.content.trim()+'\n\n※ AI生成草稿，请医师审核修改后使用';
-      currentRecord=aiRecord;
-      document.getElementById('recordText').innerHTML=aiRecord.replace(/\n/g,'<br>');
-      currentSeg=0;showQR(aiRecord);
-      DATA[0].record=aiRecord;save();renderHistory();
+  var xhr=new XMLHttpRequest();
+  xhr.open('POST','https://api.deepseek.com/v1/chat/completions');
+  xhr.setRequestHeader('Content-Type','application/json');
+  xhr.setRequestHeader('Authorization','Bearer '+DSK);
+  xhr.onload=function(){
+    if(xhr.status===200){
+      try{
+        var d=JSON.parse(xhr.responseText);
+        if(d.choices&&d.choices[0]){
+          cur=d.choices[0].message.content.trim()+'\n\n※ AI生成草稿，请医师审核修改后使用';
+          $('recordText').textContent=cur;showQR(cur);
+        }
+      }catch(e){}
     }
-  }).catch(function(){});
-
-function buildFallback(f){
-  return '【首次病程记录 - 脱机草稿】\n\n一、病例特点\n'+(f.f1?'主诉：'+f.f1+'\n':'')+(f.f2?'现病史：'+f.f2+'\n':'')+(f.f3?'既往史：'+f.f3+'\n':'')+'\n二、体格检查\n'+(f.f4?'生命体征：'+f.f4+'\n':'')+(f.f5?'查体：'+f.f5+'\n':'')+'\n三、辅助检查\n'+(f.f6?f.f6+'\n':'')+'\n四、拟诊讨论\n'+(f.f7?'初步诊断：'+f.f7+'\n':'')+(f.f8?'诊断依据：'+f.f8+'\n':'')+(f.f9?'鉴别诊断：'+f.f9+'\n':'')+'\n五、诊疗计划\n'+(f.f10?'检查计划：'+f.f10+'\n':'')+(f.f11?'治疗计划：'+f.f11+'\n':'')+'\n※ AI生成草稿（脱机模式），请医师审核修改后使用';
+  };
+  xhr.send(data);
 }
 
-// ===== New / Copy / Big =====
-function newRecord(){
-  document.getElementById('resultBox').classList.remove('show');
-  document.getElementById('formCard').style.display='';
-  document.getElementById('genBtn').style.display='';
-  document.getElementById('qrCode').innerHTML='';
-  document.getElementById('segNav').style.display='none';
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-function copyRecord(){
-  navigator.clipboard.writeText(currentRecord).then(function(){t('已复制')}).catch(function(){t('复制失败')});
-}
-function toggleBig(){
-  bigMode=!bigMode;
-  var el=document.getElementById('recordText');
-  if(bigMode){el.classList.add('big');document.getElementById('bigBtn').textContent='🔍 标准大小';}
-  else{el.classList.remove('big');document.getElementById('bigBtn').textContent='🔍 大字模式';}
-}
-
-// ===== History =====
-function renderHistory(){
-  var el=document.getElementById('historyList');
-  if(!DATA.length){el.innerHTML='<div class="empty">暂无记录</div>';return;}
-  el.innerHTML=DATA.map(function(d,i){
-    return '<div class="h-item"><div class="top"><span class="h-time">'+fmt(d.time)+'</span></div>'
-    +'<div class="h-text">'+d.record.replace(/</g,'&lt;')+'</div>'
-    +'<div class="h-btns"><button onclick="viewH('+i+')">查看+扫码</button><button onclick="copyH('+i+')">复制</button></div></div>';
-  }).join('');
-}
-function viewH(i){
-  currentRecord=DATA[i].record;
-  document.getElementById('recordText').innerHTML=currentRecord.replace(/\n/g,'<br>');
-  if(bigMode)document.getElementById('recordText').classList.add('big');
-  document.getElementById('resultBox').classList.add('show');
-  document.getElementById('formCard').style.display='none';
-  document.getElementById('genBtn').style.display='none';
-  currentSeg=0;showQR(currentRecord);
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-function copyH(i){navigator.clipboard.writeText(DATA[i].record).then(function(){t('已复制')});}
-function clearHistory(){if(confirm('确认清空所有历史记录？')){DATA=[];save();renderHistory();t('已清空');}}
-function fmt(iso){var d=new Date(iso),n=new Date(),df=n-d;if(df<6e4)return'刚刚';if(df<36e5)return Math.floor(df/6e4)+'分钟前';if(df<864e5)return Math.floor(df/36e5)+'小时前';return (d.getMonth()+1)+'月'+d.getDate()+'日';}
-
-// ===== Voice =====
-var SR=window.SpeechRecognition||window.webkitSpeechRecognition,rec=null,voiceText='';
-document.getElementById('voiceBtn').addEventListener('mousedown',startV);
-document.getElementById('voiceBtn').addEventListener('mouseup',stopV);
-document.getElementById('voiceBtn').addEventListener('touchstart',function(e){e.preventDefault();startV();});
-document.getElementById('voiceBtn').addEventListener('touchend',function(e){e.preventDefault();stopV();});
-function startV(){
-  if(!SR){t('浏览器不支持语音识别');return;}
-  var b=document.getElementById('voiceBtn');b.classList.add('rec');b.textContent='🔴 聆听中...松手结束';
-  if(!rec){rec=new SR();rec.lang='zh-CN';rec.interimResults=true;rec.continuous=true;rec.onresult=function(e){voiceText='';for(var i=0;i<e.results.length;i++)voiceText+=e.results[i][0].transcript;var o=document.getElementById('voiceOut');o.style.display='block';o.textContent=voiceText;};rec.onerror=function(){stopVRaw();};}
-  rec.start();
-}
-function stopV(){stopVRaw();}
-function stopVRaw(){document.getElementById('voiceBtn').classList.remove('rec');document.getElementById('voiceBtn').textContent='🎤 按住口述病历信息';if(rec)rec.stop();if(voiceText)document.getElementById('voiceFillBtn').style.display='block';}
-function parseVoice(){
-  if(!voiceText)return;
-  var maps=[{k:'f1',r:/主诉[：:](.+?)(?:现病史|既往|查体|检查|诊断|治疗|$)/},{k:'f2',r:/现病史[：:](.+?)(?:既往|查体|检查|诊断|治疗|$)/},{k:'f3',r:/既往史[：:](.+?)(?:查体|检查|诊断|治疗|$)/},{k:'f4',r:/(?:生命体征|查体)[：:](.+?)(?:检查|诊断|治疗|$)/}];
-  var n=0;
-  maps.forEach(function(m){var r=voiceText.match(m.r);if(r&&r[1]&&r[1].trim()){document.getElementById(m.k).value=r[1].trim();n++;}});
-  document.getElementById('voiceFillBtn').style.display='none';document.getElementById('voiceOut').style.display='none';voiceText='';
-  t(n>0?'已填入'+n+'个字段':'未能解析，请手动填写');
-}
-renderHistory();
+// ===== buttons =====
+function cp(){navigator.clipboard.writeText(cur).then(function(){T('已复制')}).catch(function(){T('复制失败，请手动长按选择')});}
+function again(){$('resultArea').classList.remove('show');$('formCard').style.display='';$('genBtn').style.display='';window.scrollTo(0,0);}
 </script>
 </body>
 </html>
