@@ -293,8 +293,10 @@ async function generate() {
 
   var record;
   try{
-    var res=await fetch('https://ai-medical-api.vercel.app/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({systemPrompt:systemPrompt,fields:fields})});
-    record=(await res.json()).record;
+    var summary=fields.f1?('主诉：'+fields.f1+'\n':'')+(fields.f2?'现病史：'+fields.f2+'\n':'')+(fields.f3?'既往史：'+fields.f3+'\n':'')+(fields.f4?'生命体征：'+fields.f4+'\n':'')+(fields.f5?'查体：'+fields.f5+'\n':'')+(fields.f6?'辅助检查：'+fields.f6+'\n':'')+(fields.f7?'初步诊断：'+fields.f7+'\n':'')+(fields.f8?'诊断依据：'+fields.f8+'\n':'')+(fields.f9?'鉴别诊断：'+fields.f9+'\n':'')+(fields.f10?'检查计划：'+fields.f10+'\n':'')+(fields.f11?'治疗计划：'+fields.f11:'');
+    var dp=await fetch('https://api.deepseek.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer sk-e5cf7e638d824e5dbb8fc0d7468c95aa'},body:JSON.stringify({model:'deepseek-chat',messages:[{role:'system',content:'你是一名经验丰富的中国临床医师，擅长书写规范的病历文书。你的回答必须专业、准确、简洁。'},{role:'user',content:systemPrompt+'\n\n---\n患者临床信息：\n'+summary+'\n---\n请生成规范的首次病程记录。'}],temperature:0.3,max_tokens:1200})});
+    var d=await dp.json();
+    record=d.choices[0].message.content.trim()+'\n\n※ AI生成草稿，请医师审核修改后使用';
   }catch(e){
     record=buildFallback(fields);
   }
