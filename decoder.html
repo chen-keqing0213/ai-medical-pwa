@@ -11,21 +11,16 @@ body {
   background: #F1F5F9; color: #1E293B; font-size: 15px;
   padding: 20px; min-height: 100vh;
 }
-.header {
-  text-align: center; padding: 20px 0; margin-bottom: 20px;
-}
+.header { text-align: center; padding: 20px 0; margin-bottom: 20px; }
 .header h1 { font-size: 22px; color: #2563EB; }
 .header p { font-size: 13px; color: #64748B; margin-top: 4px; }
-
 .status {
   text-align: center; padding: 40px 20px; background: #FFF;
-  border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-  margin-bottom: 20px;
+  border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-bottom: 20px;
 }
 .status .icon { font-size: 48px; }
 .status .msg { font-size: 16px; margin-top: 12px; color: #64748B; }
 .status .ready { color: #10B981; font-weight: 600; }
-
 .btn {
   display: block; width: 100%; max-width: 400px; margin: 0 auto 16px;
   padding: 16px; border: none; border-radius: 12px; font-size: 17px;
@@ -36,14 +31,16 @@ body {
 .btn-start.listening { background: #EF4444; animation: pulse 1.5s infinite; }
 .btn-clear { background: #FFF; color: #64748B; border: 1px solid #E2E8F0; }
 @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.5 } }
-
 .result {
   background: #FFF; border-radius: 16px; padding: 24px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-bottom: 20px;
   display: none;
 }
 .result.show { display: block; }
-.result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #E2E8F0; }
+.result-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #E2E8F0;
+}
 .result-header .label { font-size: 13px; color: #2563EB; font-weight: 600; }
 .result-header .time { font-size: 12px; color: #94A3B8; }
 .result-content { font-size: 15px; line-height: 2; white-space: pre-line; }
@@ -52,7 +49,6 @@ body {
   padding: 8px 20px; background: #DBEAFE; color: #2563EB; border: none;
   border-radius: 8px; font-size: 14px; cursor: pointer; margin-left: 8px;
 }
-
 .log { padding: 12px; margin-top: 16px; font-size: 12px; color: #94A3B8; text-align: center; }
 </style>
 </head>
@@ -60,7 +56,7 @@ body {
 
 <div class="header">
   <h1>💻 病历接收器</h1>
-  <p>用音频线连接手机和电脑麦克风孔 → 点「开始接收」→ 手机发送即可</p>
+  <p>音频线连接手机耳机孔和电脑麦克风孔</p>
 </div>
 
 <div class="status" id="statusBox">
@@ -85,15 +81,125 @@ body {
 <div class="log" id="log"></div>
 
 <script>
-let listening = false;
-let receiver = null;
+// ===== 声波接收器（完全内置，单文件可用） =====
+var Receiver = {
+  SAMPLE_RATE: 44100, BIT_MS: 25, FREQ_0: 1400, FREQ_1: 2400, PREAMBLE_BITS: 16,
+  state: 'idle',
 
-function log(msg) {
-  document.getElementById('log').textContent = msg;
-}
+  startListening: async function(cb) {
+    try {
+      var stream = await navigator.mediaDevices.getUserMedia({
+        audio: { channelCount: 1, sampleRate: this.SAMPLE_RATE, echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+      });
+      var ctx = new AudioContext({ sampleRate: this.SAMPLE_RATE });
+      var src = ctx.createMediaStreamSource(stream);
+      var proc = ctx.createScriptProcessor(4096, 1, 1);
+      var buf = new Float32Array(0);
+      var detected = false;
+      var bits = [];
+      var bitLen = Math.floor(this.SAMPLE_RATE * this.BIT_MS / 1000);
+      var self = this;
 
-async function toggleListen() {
-  const btn = document.getElementById('startBtn');
+      proc.onaudioprocess = function(e) {
+        if (self.state === 'done') return;
+        var input = e.inputBuffer.getChannelData(0);
+        var combined = new Float32Array(buf.length + input.length);
+        combined.set(buf, 0); combined.set(input, buf.length);
+        buf = combined;
+
+        if (!detected) {
+          var maxAmp = 0;
+          for (var i = 0; i < input.length; i++) maxAmp = Math.max(maxAmp, Math.abs(input[i]));
+          if (maxAmp > 0.2) {
+            detected = true; self.state = 'listening';
+            buf = new Float32Array(0); cb({ type: 'detected' });
+          }
+          return;
+        }
+
+        while (buf.length >= bitLen) {
+          var chunk = buf.slice(0, bitLen); buf = buf.slice(bitLen);
+          bits.push(self.detectBit(chunk));
+          if (bits.length >= self.PREAMBLE_BITS + 16) {
+            self.tryDecode(bits, cb);
+          }
+        }
+      };
+
+      src.connect(proc); proc.connect(ctx.destination);
+      this._ctx = ctx; this._stream = stream; this._proc = proc;
+      cb({ type: 'ready' });
+    } catch (err) {
+      cb({ type: 'error', message: '无法访问麦克风: ' + err.message });
+    }
+  },
+
+  detectBit: function(samples) {
+    var e0 = 0, e1 = 0;
+    for (var i = 0; i < samples.length; i++) {
+      var x = samples[i];
+      e0 += x * Math.sin(2 * Math.PI * this.FREQ_0 * i / this.SAMPLE_RATE);
+      e1 += x * Math.sin(2 * Math.PI * this.FREQ_1 * i / this.SAMPLE_RATE);
+    }
+    return e1 > e0 ? 1 : 0;
+  },
+
+  tryDecode: function(bits, cb) {
+    var preamble = [1,0,1,0,1,0,1,0, 0,1,0,1,0,1,0,1];
+    var preIdx = -1;
+    for (var i = 0; i <= bits.length - this.PREAMBLE_BITS; i++) {
+      var ok = true;
+      for (var j = 0; j < this.PREAMBLE_BITS; j++) {
+        if (bits[i + j] !== preamble[j]) { ok = false; break; }
+      }
+      if (ok) { preIdx = i; break; }
+    }
+    if (preIdx < 0) return;
+
+    var dataStart = preIdx + this.PREAMBLE_BITS;
+    if (bits.length < dataStart + 16) return;
+
+    var len = 0;
+    for (var i = 0; i < 16; i++) len = (len << 1) | bits[dataStart + i];
+    if (len < 1 || len > 2000) return;
+
+    if (bits.length < preIdx + this.PREAMBLE_BITS + 16 + len * 8 + 8) return;
+
+    var bytes = new Uint8Array(len);
+    for (var b = 0; b < len; b++) {
+      var val = 0;
+      for (var i = 0; i < 8; i++) val = (val << 1) | bits[preIdx + this.PREAMBLE_BITS + 16 + b * 8 + i];
+      bytes[b] = val;
+    }
+
+    var cksum = 0;
+    for (var b2 = 0; b2 < bytes.length; b2++) cksum ^= bytes[b2];
+    var ckStart = preIdx + this.PREAMBLE_BITS + 16 + len * 8;
+    var recvCk = 0;
+    for (var i2 = 0; i2 < 8; i2++) recvCk = (recvCk << 1) | bits[ckStart + i2];
+    if (cksum !== recvCk) { cb({ type: 'checksum_error' }); return; }
+
+    var decoder = new TextDecoder();
+    this.state = 'done';
+    cb({ type: 'decoded', text: decoder.decode(bytes) });
+  },
+
+  stop: function() {
+    this.state = 'idle';
+    if (this._proc) this._proc.disconnect();
+    if (this._ctx) this._ctx.close();
+    if (this._stream) this._stream.getTracks().forEach(function(t) { t.stop(); });
+  },
+};
+
+// ===== 界面逻辑 =====
+var listening = false;
+var receiver = null;
+
+function log(msg) { document.getElementById('log').textContent = msg; }
+
+function toggleListen() {
+  var btn = document.getElementById('startBtn');
   if (listening) {
     if (receiver) { receiver.stop(); receiver = null; }
     listening = false;
@@ -103,34 +209,28 @@ async function toggleListen() {
   } else {
     btn.textContent = '⏳ 正在监听...';
     btn.classList.add('listening');
-    // Load receiver dynamically
-    const script = document.createElement('script');
-    script.src = 'js/audio-receiver.js';
-    script.onload = () => {
-      receiver = Object.create(Receiver);
-      receiver.startListening((event) => {
-        if (event.type === 'ready') {
-          listening = true;
-          document.getElementById('statusBox').innerHTML = '<div class="icon">👂</div><div class="msg ready">正在监听声波信号...</div>';
-        } else if (event.type === 'detected') {
-          document.getElementById('statusBox').innerHTML = '<div class="icon">📶</div><div class="msg ready">检测到信号，正在解码...</div>';
-        } else if (event.type === 'decoded') {
-          showResult(event.text);
-          btn.textContent = '🔴 开始接收';
-          btn.classList.remove('listening');
-          listening = false;
-          receiver.stop(); receiver = null;
-        } else if (event.type === 'error') {
-          document.getElementById('statusBox').innerHTML = '<div class="icon">❌</div><div class="msg">'+event.message+'</div>';
-          btn.textContent = '🔴 开始接收';
-          btn.classList.remove('listening');
-          listening = false;
-        } else if (event.type === 'checksum_error') {
-          log('校验失败，请降低音量重试');
-        }
-      });
-    };
-    document.head.appendChild(script);
+    receiver = Object.create(Receiver);
+    receiver.startListening(function(event) {
+      if (event.type === 'ready') {
+        listening = true;
+        document.getElementById('statusBox').innerHTML = '<div class="icon">👂</div><div class="msg ready">正在监听声波信号...</div>';
+      } else if (event.type === 'detected') {
+        document.getElementById('statusBox').innerHTML = '<div class="icon">📶</div><div class="msg ready">检测到信号，正在解码...</div>';
+      } else if (event.type === 'decoded') {
+        showResult(event.text);
+        btn.textContent = '🔴 开始接收';
+        btn.classList.remove('listening');
+        listening = false;
+        receiver.stop(); receiver = null;
+      } else if (event.type === 'error') {
+        document.getElementById('statusBox').innerHTML = '<div class="icon">❌</div><div class="msg">'+event.message+'</div>';
+        btn.textContent = '🔴 开始接收';
+        btn.classList.remove('listening');
+        listening = false;
+      } else if (event.type === 'checksum_error') {
+        log('校验失败，请降低音量或检查连线');
+      }
+    });
   }
 }
 
@@ -142,10 +242,10 @@ function showResult(text) {
 }
 
 function copyAll() {
-  const text = document.getElementById('recvContent').textContent;
-  navigator.clipboard.writeText(text).then(() => {
+  var text = document.getElementById('recvContent').textContent;
+  navigator.clipboard.writeText(text).then(function() {
     log('已复制到剪贴板 ✅');
-  }).catch(() => log('复制失败，请手动选择文字'));
+  }).catch(function() { log('复制失败，请手动选择文字'); });
 }
 
 function clearAll() {
