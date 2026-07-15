@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>病历接收器 · AI病历助手</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: #F1F5F9; color: #1E293B; font-size: 15px;
+  padding: 20px; min-height: 100vh;
+}
+.header {
+  text-align: center; padding: 20px 0; margin-bottom: 20px;
+}
+.header h1 { font-size: 22px; color: #2563EB; }
+.header p { font-size: 13px; color: #64748B; margin-top: 4px; }
+
+.status {
+  text-align: center; padding: 40px 20px; background: #FFF;
+  border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  margin-bottom: 20px;
+}
+.status .icon { font-size: 48px; }
+.status .msg { font-size: 16px; margin-top: 12px; color: #64748B; }
+.status .ready { color: #10B981; font-weight: 600; }
+
+.btn {
+  display: block; width: 100%; max-width: 400px; margin: 0 auto 16px;
+  padding: 16px; border: none; border-radius: 12px; font-size: 17px;
+  font-weight: 600; cursor: pointer; text-align: center;
+}
+.btn-start { background: #2563EB; color: #FFF; }
+.btn-start:active { opacity: 0.85; }
+.btn-start.listening { background: #EF4444; animation: pulse 1.5s infinite; }
+.btn-clear { background: #FFF; color: #64748B; border: 1px solid #E2E8F0; }
+@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.5 } }
+
+.result {
+  background: #FFF; border-radius: 16px; padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-bottom: 20px;
+  display: none;
+}
+.result.show { display: block; }
+.result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #E2E8F0; }
+.result-header .label { font-size: 13px; color: #2563EB; font-weight: 600; }
+.result-header .time { font-size: 12px; color: #94A3B8; }
+.result-content { font-size: 15px; line-height: 2; white-space: pre-line; }
+.result-actions { text-align: right; margin-top: 16px; }
+.result-actions button {
+  padding: 8px 20px; background: #DBEAFE; color: #2563EB; border: none;
+  border-radius: 8px; font-size: 14px; cursor: pointer; margin-left: 8px;
+}
+
+.log { padding: 12px; margin-top: 16px; font-size: 12px; color: #94A3B8; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>💻 病历接收器</h1>
+  <p>用音频线连接手机和电脑麦克风孔 → 点「开始接收」→ 手机发送即可</p>
+</div>
+
+<div class="status" id="statusBox">
+  <div class="icon">🎤</div>
+  <div class="msg">准备就绪，等待接收病历</div>
+</div>
+
+<button class="btn btn-start" id="startBtn" onclick="toggleListen()">🔴 开始接收</button>
+<button class="btn btn-clear" onclick="clearAll()">🗑 清空内容</button>
+
+<div class="result" id="resultBox">
+  <div class="result-header">
+    <span class="label">📋 接收到的病历</span>
+    <span class="time" id="recvTime"></span>
+  </div>
+  <div class="result-content" id="recvContent"></div>
+  <div class="result-actions">
+    <button onclick="copyAll()">📋 一键复制</button>
+  </div>
+</div>
+
+<div class="log" id="log"></div>
+
+<script>
+let listening = false;
+let receiver = null;
+
+function log(msg) {
+  document.getElementById('log').textContent = msg;
+}
+
+async function toggleListen() {
+  const btn = document.getElementById('startBtn');
+  if (listening) {
+    if (receiver) { receiver.stop(); receiver = null; }
+    listening = false;
+    btn.textContent = '🔴 开始接收';
+    btn.classList.remove('listening');
+    document.getElementById('statusBox').innerHTML = '<div class="icon">⏸</div><div class="msg">已停止接收</div>';
+  } else {
+    btn.textContent = '⏳ 正在监听...';
+    btn.classList.add('listening');
+    // Load receiver dynamically
+    const script = document.createElement('script');
+    script.src = 'js/audio-receiver.js';
+    script.onload = () => {
+      receiver = Object.create(Receiver);
+      receiver.startListening((event) => {
+        if (event.type === 'ready') {
+          listening = true;
+          document.getElementById('statusBox').innerHTML = '<div class="icon">👂</div><div class="msg ready">正在监听声波信号...</div>';
+        } else if (event.type === 'detected') {
+          document.getElementById('statusBox').innerHTML = '<div class="icon">📶</div><div class="msg ready">检测到信号，正在解码...</div>';
+        } else if (event.type === 'decoded') {
+          showResult(event.text);
+          btn.textContent = '🔴 开始接收';
+          btn.classList.remove('listening');
+          listening = false;
+          receiver.stop(); receiver = null;
+        } else if (event.type === 'error') {
+          document.getElementById('statusBox').innerHTML = '<div class="icon">❌</div><div class="msg">'+event.message+'</div>';
+          btn.textContent = '🔴 开始接收';
+          btn.classList.remove('listening');
+          listening = false;
+        } else if (event.type === 'checksum_error') {
+          log('校验失败，请降低音量重试');
+        }
+      });
+    };
+    document.head.appendChild(script);
+  }
+}
+
+function showResult(text) {
+  document.getElementById('recvContent').textContent = text;
+  document.getElementById('recvTime').textContent = new Date().toLocaleTimeString('zh-CN');
+  document.getElementById('resultBox').classList.add('show');
+  document.getElementById('statusBox').innerHTML = '<div class="icon">✅</div><div class="msg ready">接收成功！请复制粘贴到EMR</div>';
+}
+
+function copyAll() {
+  const text = document.getElementById('recvContent').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    log('已复制到剪贴板 ✅');
+  }).catch(() => log('复制失败，请手动选择文字'));
+}
+
+function clearAll() {
+  document.getElementById('recvContent').textContent = '';
+  document.getElementById('resultBox').classList.remove('show');
+  log('');
+}
+</script>
+</body>
+</html>
