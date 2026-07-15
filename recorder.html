@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>病历查阅器 · AI病历助手</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: #F1F5F9; color: #1E293B; font-size: 15px;
+  padding: 20px; min-height: 100vh;
+}
+.header { text-align: center; padding: 20px 0; margin-bottom: 24px; }
+.header h1 { font-size: 22px; color: #2563EB; }
+.header p { font-size: 13px; color: #64748B; margin-top: 4px; }
+
+.search-box {
+  background: #FFF; border-radius: 16px; padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-bottom: 20px;
+  text-align: center;
+}
+.search-box label { font-size: 13px; color: #64748B; display: block; margin-bottom: 12px; }
+.code-input {
+  width: 200px; padding: 16px; border: 2px solid #E2E8F0; border-radius: 12px;
+  font-size: 28px; text-align: center; letter-spacing: 8px; font-family: 'Courier New', monospace;
+  font-weight: 700; color: #2563EB; text-transform: uppercase;
+}
+.code-input:focus { border-color: #2563EB; outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+.code-input::placeholder { font-size: 14px; letter-spacing: 2px; color: #94A3B8; }
+.hint { font-size: 12px; color: #94A3B8; margin-top: 10px; }
+
+.result {
+  background: #FFF; border-radius: 16px; padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06); display: none;
+}
+.result.show { display: block; }
+.result-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #E2E8F0;
+}
+.result-header .code-badge { font-size: 18px; color: #2563EB; font-weight: 700; font-family: 'Courier New', monospace; }
+.result-content { font-size: 15px; line-height: 2; white-space: pre-line; }
+.result-actions { text-align: right; margin-top: 16px; }
+.result-actions button {
+  padding: 10px 24px; background: #DBEAFE; color: #2563EB; border: none;
+  border-radius: 8px; font-size: 14px; cursor: pointer; margin-left: 8px;
+}
+
+.empty-state { text-align: center; padding: 80px 20px; }
+.empty-state .icon { font-size: 48px; }
+.empty-state .msg { font-size: 15px; color: #64748B; margin-top: 12px; }
+.empty-state .sub { font-size: 12px; color: #94A3B8; margin-top: 4px; }
+
+.status { text-align: center; padding: 12px; font-size: 12px; color: #10B981; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>💻 病历查阅器</h1>
+  <p>输入手机上的 4 位短码 → 病历立刻出现</p>
+</div>
+
+<div class="search-box">
+  <label>📟 请输入短码</label>
+  <input type="text" class="code-input" id="codeInput"
+    placeholder="XXXX" maxlength="4" autofocus
+    oninput="this.value=this.value.toUpperCase(); searchCode();">
+  <div class="hint">输入手机端生成的 4 位短码，自动查询</div>
+</div>
+
+<div class="result" id="resultBox">
+  <div class="result-header">
+    <span>📋 查询结果</span>
+    <span class="code-badge" id="foundCode"></span>
+  </div>
+  <div class="result-content" id="recvContent"></div>
+  <div class="result-actions">
+    <button onclick="copyAll()">📋 一键复制</button>
+  </div>
+</div>
+
+<div class="empty-state" id="emptyState">
+  <div class="icon">📂</div>
+  <div class="msg">未加载数据库</div>
+  <div class="sub">请确保 data.json 与本文件在同一目录下</div>
+</div>
+
+<div class="status" id="statusBar"></div>
+
+<script src="data.json"></script>
+<script>
+// window.DATA 由 data.json 通过 <script> 加载注入
+// data.json 格式: window.DATA = {"A38K": "病历内容...", ...}
+
+(function() {
+  var data = window.DATA || {};
+  var keys = Object.keys(data);
+  var statusBar = document.getElementById('statusBar');
+  var emptyState = document.getElementById('emptyState');
+
+  if (keys.length > 0) {
+    statusBar.textContent = '✅ 已加载 ' + keys.length + ' 条记录';
+    emptyState.style.display = 'none';
+  } else {
+    statusBar.textContent = '⚠ 未找到记录，请将 data.json 放入本目录';
+  }
+
+  // 暴露给全局
+  window._searchData = data;
+
+  // 如果数据为空，尝试通过文件选择器加载
+  if (keys.length === 0) {
+    var uploadHint = document.createElement('div');
+    uploadHint.style.textAlign = 'center';
+    uploadHint.style.padding = '20px';
+    uploadHint.innerHTML = '<input type="file" id="filePicker" accept=".json" style="display:none"><label for="filePicker" style="color:#2563EB;cursor:pointer;font-size:14px;text-decoration:underline">📁 或点击选择 data.json 文件</label>';
+    document.querySelector('.empty-state').appendChild(uploadHint);
+
+    document.getElementById('filePicker').addEventListener('change', function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        var text = ev.target.result;
+        try {
+          // 解析 window.DATA = {...} 格式
+          var jsonStr = text.replace(/^window\.DATA\s*=\s*/, '').replace(/;$/, '');
+          window._searchData = JSON.parse(jsonStr);
+          var k = Object.keys(window._searchData);
+          statusBar.textContent = '✅ 已加载 ' + k.length + ' 条记录';
+          emptyState.innerHTML = '<div class="icon">✅</div><div class="msg">已加载 ' + k.length + ' 条记录</div>';
+          document.getElementById('codeInput').focus();
+        } catch (err) {
+          statusBar.textContent = '❌ 文件格式错误';
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
+})();
+
+var lastSearch = '';
+
+function searchCode() {
+  var input = document.getElementById('codeInput');
+  var code = input.value.toUpperCase().trim();
+
+  // 只处理完整的4位
+  if (code.length < 4) {
+    document.getElementById('resultBox').classList.remove('show');
+    return;
+  }
+
+  if (code === lastSearch) return;
+  lastSearch = code;
+
+  var data = window._searchData || {};
+  var record = data[code];
+
+  if (record) {
+    document.getElementById('foundCode').textContent = code;
+    document.getElementById('recvContent').textContent = record;
+    document.getElementById('resultBox').classList.add('show');
+  } else {
+    document.getElementById('resultBox').classList.remove('show');
+    document.getElementById('statusBar').textContent = '❌ 未找到短码: ' + code;
+    setTimeout(function() {
+      var bar = document.getElementById('statusBar');
+      var keys = Object.keys(window._searchData || {});
+      bar.textContent = keys.length > 0 ? '✅ 已加载 ' + keys.length + ' 条记录' : '⚠ 未找到记录';
+    }, 2000);
+  }
+}
+
+function copyAll() {
+  var text = document.getElementById('recvContent').textContent;
+  navigator.clipboard.writeText(text).then(function() {
+    document.getElementById('statusBar').textContent = '✅ 已复制到剪贴板';
+  }).catch(function() {
+    document.getElementById('statusBar').textContent = '❌ 复制失败，请手动选择文字';
+  });
+}
+</script>
+</body>
+</html>
