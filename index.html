@@ -181,13 +181,15 @@ function showTestQR(){
   return test;
 }
 
-// ===== Show =====
+// ===== Show result area (without QR yet) =====
 function show(text){
   cur=text;$('recordText').textContent=text;
   $('resultArea').classList.add('show');
   $('formCard').style.display='none';$('genBtn').style.display='none';
   document.querySelector('.voice-wrap').style.display='none';
-  showQR(text);window.scrollTo(0,0);
+  // QR placeholder
+  $('qrCanvas').innerHTML='<div style=\"padding:40px;color:#94A3B8;font-size:14px\">⏳ 文本生成中，二维码稍后显示...</div>';
+  window.scrollTo(0,0);
 }
 
 // ===== Generate =====
@@ -196,11 +198,13 @@ function go(){
   if(!f.a&&!f.b&&!f.c&&!f.d){T('请至少填写一项信息');return;}
   var btn=$('genBtn');btn.disabled=true;btn.textContent='生成中...';
 
-  // Show local version immediately
+  // Show local text immediately (QR shows placeholder)
   show(build(f));
+  // Generate QR for local version
+  showQR(cur);
   btn.disabled=false;btn.textContent='✨ 生成首次病程记录';
 
-  // Try AI upgrade
+  // Try AI upgrade in background
   var sum='主诉：'+(f.a||'无')+'\n重要发现：'+(f.b||'无')+'\n诊断：'+(f.c||'无')+'\n计划：'+(f.d||'无');
   var xhr=new XMLHttpRequest();
   xhr.open('POST','https://api.deepseek.com/v1/chat/completions');
