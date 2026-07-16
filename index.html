@@ -14,12 +14,11 @@ h1{font-size:22px;text-align:center;margin:12px 0 4px;color:#2563EB}
 .voice-wrap{text-align:center;margin-bottom:14px}
 .voice-btn{display:inline-block;width:80px;height:80px;border-radius:50%;border:3px solid #2563EB;background:#FFF;font-size:36px;cursor:pointer;line-height:80px;user-select:none;transition:all .2s}
 .voice-btn.on{background:#2563EB;color:#FFF}
-.voice-hint{font-size:13px;color:#64748B;margin-top:6px}
+.voice-hint{font-size:13px;color:#64748B;margin-top:6px;line-height:1.5}
 .voice-out{padding:12px;background:#F8FAFC;border-radius:10px;font-size:14px;line-height:1.6;margin-top:8px;display:none;text-align:left}
 .voice-out.show{display:block}
 
 .card{background:#FFF;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
-
 .field{margin-bottom:12px}
 .field:last-child{margin-bottom:0}
 .field label{display:block;font-size:14px;font-weight:600;margin-bottom:4px}
@@ -32,14 +31,17 @@ h1{font-size:22px;text-align:center;margin:12px 0 4px;color:#2563EB}
 .btn-blue:disabled{opacity:.4}
 .btn-white{background:#FFF;color:#2563EB;border:1.5px solid #2563EB}
 
+.loading-box{text-align:center;padding:60px 20px}
+.loading-box .spinner{display:inline-block;width:40px;height:40px;border:4px solid #E2E8F0;border-top-color:#2563EB;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-box .msg{font-size:15px;color:#64748B;margin-top:16px}
+
 #resultArea{display:none}
 #resultArea.show{display:block}
-
 .qr-box{text-align:center;padding:16px 0}
-.qr-box canvas{max-width:280px}
+.qr-box canvas{max-width:280px;image-rendering:pixelated}
 .qr-hint{font-size:13px;color:#64748B;margin-bottom:8px}
 .qr-tip{font-size:14px;color:#2563EB;font-weight:600;margin-top:6px}
-
 .record{font-size:15px;line-height:2;white-space:pre-line;word-break:break-all;border-top:1px solid #E2E8F0;margin-top:14px;padding-top:14px}
 .deco{text-align:center;font-size:12px;color:#94A3B8;padding:16px 0}
 .toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);color:#FFF;padding:12px 24px;border-radius:10px;font-size:14px;z-index:999;pointer-events:none;opacity:0;transition:opacity .3s}
@@ -49,36 +51,30 @@ h1{font-size:22px;text-align:center;margin:12px 0 4px;color:#2563EB}
 <body>
 
 <h1>📋 AI 病历草稿助手</h1>
-<div class="sub">首次病程记录 · 4字段极简输入 · 扫码枪录入</div>
+<div class="sub">首次病程记录 · 4字段 · 扫码枪录入</div>
 
 <!-- Voice -->
 <div class="voice-wrap">
   <button class="voice-btn" id="micBtn">🎤</button>
-  <div class="voice-hint" id="micHint">点一下开始口述，再说一遍结束</div>
+  <div class="voice-hint">点一下开始口述，再说一遍结束<br><span style="color:#94A3B8;font-size:11px">微信内不支持语音，请用浏览器打开</span></div>
   <div class="voice-out" id="voiceOut"></div>
 </div>
 
 <!-- Form -->
 <div class="card" id="formCard">
-  <div class="field">
-    <label>① 主诉</label>
-    <textarea id="a" rows="2" placeholder="主要症状 + 持续时间，如：胸痛3小时"></textarea>
-  </div>
-  <div class="field">
-    <label>② 重要发现</label>
-    <textarea id="b" rows="5" placeholder="现病史、既往史、查体发现、辅助检查结果……AI会帮你整理分类"></textarea>
-  </div>
-  <div class="field">
-    <label>③ 初步诊断</label>
-    <textarea id="c" rows="2" placeholder="按主次排列，如：急性广泛前壁心肌梗死"></textarea>
-  </div>
-  <div class="field">
-    <label>④ 诊疗计划</label>
-    <textarea id="d" rows="3" placeholder="检查 + 治疗，如：急诊PCI、双联抗血小板……"></textarea>
-  </div>
+  <div class="field"><label>① 主诉</label><textarea id="a" rows="2" placeholder="主要症状 + 持续时间"></textarea></div>
+  <div class="field"><label>② 重要发现</label><textarea id="b" rows="5" placeholder="现病史、既往史、查体发现、辅助检查结果"></textarea></div>
+  <div class="field"><label>③ 初步诊断</label><textarea id="c" rows="2" placeholder="按主次排列"></textarea></div>
+  <div class="field"><label>④ 诊疗计划</label><textarea id="d" rows="3" placeholder="检查 + 治疗计划"></textarea></div>
 </div>
 
 <button class="btn btn-blue" id="genBtn" onclick="go()">✨ 生成首次病程记录</button>
+
+<!-- Loading -->
+<div class="loading-box" id="loadingBox" style="display:none">
+  <div class="spinner"></div>
+  <div class="msg">AI 正在生成病历，请稍候...</div>
+</div>
 
 <!-- Result -->
 <div id="resultArea">
@@ -86,8 +82,7 @@ h1{font-size:22px;text-align:center;margin:12px 0 4px;color:#2563EB}
     <div class="qr-box">
       <div class="qr-hint">📟 扫码枪扫此二维码 → 文本自动录入EMR</div>
       <div id="qrCanvas"></div>
-      <div class="qr-tip" style="margin-bottom:8px">🔫 USB扫码枪即插即用，无需驱动</div>
-      <button class="btn-white" onclick="diag()" style="font-size:13px;padding:8px;margin-top:0">🔧 扫码乱码？点此诊断</button>
+      <div class="qr-tip" style="margin-bottom:8px">🔫 USB扫码枪即插即用 · 如乱码请<a href="#" onclick="diag();return false;" style="color:#2563EB">点此诊断</a></div>
       <div id="diagBox" style="display:none;margin-top:10px;padding:10px;background:#FFFBEB;border-radius:10px;font-size:13px;text-align:left"></div>
     </div>
     <div class="record" id="recordText"></div>
@@ -99,39 +94,151 @@ h1{font-size:22px;text-align:center;margin:12px 0 4px;color:#2563EB}
 <div class="deco">🔒 不收集患者身份信息 · AI生成仅供参考</div>
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js">
+</script>
 <script>
 var $=function(id){return document.getElementById(id);};
 var T=function(m){var e=$('toast');e.textContent=m;e.classList.add('show');setTimeout(function(){e.classList.remove('show')},1500);};
 var DSK='sk-e5cf7e638d824e5dbb8fc0d7468c95aa';
 var cur='';
-var voiceText='';
+
+// ===== QR via CDN library =====
+function showQR(text){
+  var c=$('qrCanvas');c.innerHTML='';
+  var cv=document.createElement('canvas');cv.width=cv.height=280;
+  c.appendChild(cv);
+  QRCode.toCanvas(cv,text,{width:280,margin:2,errorCorrectionLevel:'M'},function(err){
+    if(err){c.innerHTML='<div style="padding:30px;color:#EF4444">二维码生成失败：'+err+'</div>';}
+  });
+}
+
+// ===== Show result =====
+function show(text){
+  cur=text;
+  $('recordText').textContent=text;
+  $('resultArea').classList.add('show');
+  showQR(text);
+  window.scrollTo(0,0);
+}
+
+// ===== Build fallback =====
+function build(f){
+  var p=[];
+  p.push('【首次病程记录】');p.push('');
+  p.push('一、病例特点');
+  p.push('主诉：'+(f.a||'【待补充】'));
+  if(f.b)p.push(f.b);
+  p.push('');p.push('二、拟诊讨论');
+  p.push('初步诊断：'+(f.c||'【待补充】'));
+  p.push('诊断依据：见上述病例特点');
+  p.push('鉴别诊断：【待补充】');
+  p.push('');p.push('三、诊疗计划');
+  p.push(f.d||'【待补充】');
+  p.push('');p.push('※ AI生成草稿，请医师审核修改后使用');
+  return p.join('\n');
+}
+
+// ===== Generate =====
+function go(){
+  var f={a:$('a').value.trim(),b:$('b').value.trim(),c:$('c').value.trim(),d:$('d').value.trim()};
+  if(!f.a&&!f.b&&!f.c&&!f.d){T('请至少填写一项信息');return;}
+
+  // Hide form, show loading
+  $('formCard').style.display='none';
+  $('genBtn').style.display='none';
+  document.querySelector('.voice-wrap').style.display='none';
+  $('loadingBox').style.display='block';
+  $('resultArea').classList.remove('show');
+  window.scrollTo(0,0);
+
+  var sum='主诉：'+(f.a||'无')+'\n重要发现：'+(f.b||'无')+'\n诊断：'+(f.c||'无')+'\n计划：'+(f.d||'无');
+
+  // Call AI
+  var xhr=new XMLHttpRequest();
+  xhr.open('POST','https://api.deepseek.com/v1/chat/completions');
+  xhr.setRequestHeader('Content-Type','application/json');
+  xhr.setRequestHeader('Authorization','Bearer '+DSK);
+  xhr.onload=function(){
+    $('loadingBox').style.display='none';
+    if(xhr.status===200){
+      try{var d=JSON.parse(xhr.responseText);
+        if(d.choices&&d.choices[0]){
+          var aiText=d.choices[0].message.content.trim()+'\n\n※ AI生成草稿，请医师审核修改后使用';
+          show(aiText);return;
+        }
+      }catch(e){}
+    }
+    // AI failed, use fallback
+    show(build(f));
+  };
+  xhr.onerror=function(){
+    $('loadingBox').style.display='none';
+    show(build(f));
+  };
+  xhr.send(JSON.stringify({
+    model:'deepseek-chat',
+    messages:[
+      {role:'system',content:'你是经验丰富的中国临床医师。请根据以下患者信息生成规范的「首次病程记录」。严格按结构：一、病例特点（主诉、现病史、既往史、体格检查、辅助检查）二、拟诊讨论（初步诊断、诊断依据、鉴别诊断）三、诊疗计划（检查计划、治疗计划）。专业术语，符合《病历书写基本规范》。缺失信息标注【待补充】。不要在文末加免责声明。'},
+      {role:'user',content:'患者信息：\n'+sum}
+    ],
+    temperature:0.3,max_tokens:1200
+  }));
+}
+
+// ===== Buttons =====
+function cp(){navigator.clipboard.writeText(cur).then(function(){T('已复制')}).catch(function(){T('复制失败')});}
+function again(){
+  $('resultArea').classList.remove('show');
+  $('formCard').style.display='';
+  $('genBtn').style.display='';
+  document.querySelector('.voice-wrap').style.display='';
+  window.scrollTo(0,0);
+}
+
+// ===== Scanner diagnosis =====
+function diag(){
+  var d=$('diagBox');d.style.display='block';
+  // Generate test QR with pure ASCII
+  var testText='Hello World 12345 ABCD abcd';
+  $('qrCanvas').innerHTML='';
+  var cv=document.createElement('canvas');cv.width=cv.height=280;
+  $('qrCanvas').appendChild(cv);
+  QRCode.toCanvas(cv,testText,{width:280,margin:2,errorCorrectionLevel:'M'});
+  d.innerHTML='<b>扫码枪诊断</b><br><br>'
+    +'1. 上面已换成 <b>纯英文</b> 测试码<br>'
+    +'   预期输出：<b>Hello World 12345 ABCD abcd</b><br>'
+    +'   实际输出：______<br><br>'
+    +'2. <b>如果英文正常→中文乱码</b><br>'
+    +'   ✅ 扫码枪需设为UTF-8输出模式<br>'
+    +'   📖 翻说明书找「UTF-8」「编码」「键盘语言」设置码<br>'
+    +'   🔧 常见品牌：扫"USA keyboard"或"Standard ASCII"恢复默认<br><br>'
+    +'3. <b>如果英文也乱码</b><br>'
+    +'   ✅ 扫码枪未正确识别，检查USB连接<br>'
+    +'   ✅ 确认光标在文本输入框内<br><br>'
+    +'4. 点「重新生成」恢复原二维码';
+}
 
 // ===== Voice =====
 var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-var rec=null;
-var listening=false;
-
+var rec=null,listening=false,voiceText='';
 $('micBtn').addEventListener('click',function(){
-  if(!SR){T('请用手机浏览器打开（Chrome/Safari），微信和电脑浏览器不支持语音');return;}
-  if(listening){stopVoice();}else{startVoice();}
+  if(!SR){T('请用浏览器打开，微信不支持语音');return;}
+  if(listening){stopV();}else{startV();}
 });
-
-function startVoice(){
+function startV(){
   try{
     rec=new SR();rec.lang='zh-CN';rec.interimResults=true;rec.continuous=false;
-    rec.onstart=function(){listening=true;$('micBtn').classList.add('on');$('micHint').textContent='🔴 聆听中……说完了再点一次结束';voiceText='';};
+    rec.onstart=function(){listening=true;$('micBtn').classList.add('on');$('micBtn').textContent='🔴';voiceText='';};
     rec.onresult=function(e){voiceText='';for(var i=0;i<e.results.length;i++)voiceText+=e.results[i][0].transcript;$('voiceOut').textContent=voiceText;$('voiceOut').classList.add('show');};
-    rec.onerror=function(e){stopVoice();var m={'not-allowed':'请允许麦克风权限','no-speech':'未检测到声音','network':'网络异常'};T(m[e.error]||'语音失败');};
-    rec.onend=function(){if(listening){stopVoice();if(voiceText.trim()){autoFill(voiceText);T('已识别并填入字段，请检查修正');}}};
+    rec.onerror=function(e){stopV();var m={'not-allowed':'请允许麦克风','no-speech':'未检测到声音'};T(m[e.error]||'语音失败');};
+    rec.onend=function(){if(listening){stopV();if(voiceText.trim()){autoFill(voiceText);T('已识别并填入');}}};
     rec.start();
-  }catch(e){T('语音启动失败，请手动填写');}
+  }catch(e){T('语音启动失败');}
 }
-
-function stopVoice(){
-  listening=false;$('micBtn').classList.remove('on');$('micHint').textContent='点一下开始口述，再说一遍结束';
+function stopV(){
+  listening=false;$('micBtn').classList.remove('on');$('micBtn').textContent='🎤';
   try{rec.stop();}catch(e){}
 }
-
 function autoFill(txt){
   var m1=txt.match(/主诉[：:]\s*(.+?)(?:。|重要发现|查体|检查|既往|现病史|诊断|计划|治疗|$)/);
   var m2=txt.match(/(?:初步|诊断)[：:]\s*(.+?)(?:。|计划|治疗|$)/);
@@ -141,97 +248,6 @@ function autoFill(txt){
   if(m3&&m3[1]&&!$('d').value)$('d').value=m3[1].trim();
   if(!$('a').value&&!$('c').value&&!$('d').value&&!$('b').value)$('b').value=txt;
 }
-
-// ===== Build =====
-function build(f){
-  var p=[];
-  p.push('【首次病程记录】');p.push('');
-  p.push('一、病例特点');
-  p.push('主诉：'+(f.a||'【待补充】'));
-  if(f.b)p.push(f.b);
-  p.push('');p.push('二、拟诊讨论');
-  p.push('初步诊断：'+(f.c||'【待补充】'));
-  if(f.c)p.push('诊断依据：见上述病例特点');
-  p.push('鉴别诊断：【待补充】');
-  p.push('');p.push('三、诊疗计划');
-  p.push(f.d||'【待补充】');
-  p.push('');p.push('※ AI生成草稿，请医师审核修改后使用');
-  return p.join('\n');
-}
-
-// ===== QR =====
-function showQR(text){
-  var c=$('qrCanvas');c.innerHTML='';
-  var cv=document.createElement('canvas');cv.width=cv.height=300;c.appendChild(cv);
-  var ctx=cv.getContext('2d');ctx.fillStyle='#FFF';ctx.fillRect(0,0,300,300);
-  var img=document.createElement('img');
-  img.onload=function(){ctx.drawImage(img,0,0,300,300);};
-  img.src='https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=8&data='+encodeURIComponent(text);
-}
-
-// Test QR with pure ASCII
-function showTestQR(){
-  var test='Hello World 12345';
-  var c=$('qrCanvas');c.innerHTML='';
-  var cv=document.createElement('canvas');cv.width=cv.height=300;c.appendChild(cv);
-  var ctx=cv.getContext('2d');ctx.fillStyle='#FFF';ctx.fillRect(0,0,300,300);
-  var img=document.createElement('img');
-  img.onload=function(){ctx.drawImage(img,0,0,300,300);};
-  img.src='https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=8&data='+test;
-  return test;
-}
-
-// ===== Show result =====
-function show(text){
-  cur=text;$('recordText').textContent=text;
-  $('resultArea').classList.add('show');
-  $('formCard').style.display='none';$('genBtn').style.display='none';
-  document.querySelector('.voice-wrap').style.display='none';
-  showQR(text);
-  window.scrollTo(0,0);
-}
-
-// ===== Generate =====
-function go(){
-  var f={a:$('a').value.trim(),b:$('b').value.trim(),c:$('c').value.trim(),d:$('d').value.trim()};
-  if(!f.a&&!f.b&&!f.c&&!f.d){T('请至少填写一项信息');return;}
-  var btn=$('genBtn');btn.disabled=true;btn.textContent='生成中...';
-
-  // Show local text + QR immediately, AI updates text only
-  var localText=build(f);
-  cur=localText;
-  show(localText);
-  btn.disabled=false;btn.textContent='✨ 生成首次病程记录';
-
-  // AI upgrades text in background, QR stays unchanged
-  var sum='主诉：'+(f.a||'无')+'\n重要发现：'+(f.b||'无')+'\n诊断：'+(f.c||'无')+'\n计划：'+(f.d||'无');
-  var xhr=new XMLHttpRequest();
-  xhr.open('POST','https://api.deepseek.com/v1/chat/completions');
-  xhr.setRequestHeader('Content-Type','application/json');
-  xhr.setRequestHeader('Authorization','Bearer '+DSK);
-  xhr.onload=function(){
-    if(xhr.status===200){try{var d=JSON.parse(xhr.responseText);if(d.choices&&d.choices[0]){cur=d.choices[0].message.content.trim()+'\n\n※ AI生成草稿，请医师审核修改后使用';$('recordText').textContent=cur;}}catch(e){}}
-  };
-  xhr.send(JSON.stringify({model:'deepseek-chat',messages:[{role:'system',content:'你是经验丰富的中国临床医师。请生成规范的「首次病程记录」。结构：一、病例特点（主诉、现病史、既往史、体格检查、辅助检查）二、拟诊讨论（初步诊断、诊断依据、鉴别诊断）三、诊疗计划（检查计划、治疗计划）。专业术语，符合规范。缺失标注【待补充】。'},{role:'user',content:'患者信息：\n'+sum}],temperature:0.3,max_tokens:1200}));
-}
-
-function diag(){
-  var d=$('diagBox');d.style.display='block';
-  // Show test QR
-  var testText=showTestQR();
-  d.innerHTML='<b>诊断步骤：</b><br><br>'
-    +'1. 先用扫码枪扫上面这个二维码<br>'
-    +'   预期输出：<b>Hello World 12345</b><br>'
-    +'   实际输出：______<br><br>'
-    +'2. 如果英文输出正常 → 扫码枪不支持中文<br>'
-    +'   ✅ 解法：翻看扫码枪说明书，找「UTF-8 模式」或「中文模式」设置码<br><br>'
-    +'3. 如果英文也乱码 → 扫码枪本身未正确识别<br>'
-    +'   ✅ 解法：检查扫码枪是否即插即用、键盘布局是否为美式英文<br><br>'
-    +'📋 临时方案：优先使用 <b>「复制病历」按钮</b>，手机复制后发到电脑。';
-}
-
-function cp(){navigator.clipboard.writeText(cur).then(function(){T('已复制')}).catch(function(){T('复制失败')});}
-function again(){$('resultArea').classList.remove('show');$('formCard').style.display='';$('genBtn').style.display='';document.querySelector('.voice-wrap').style.display='';window.scrollTo(0,0);}
 </script>
 </body>
 </html>
