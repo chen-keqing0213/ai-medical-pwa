@@ -102,18 +102,18 @@ var T=function(m){var e=$('toast');e.textContent=m;e.classList.add('show');setTi
 var DSK='sk-e5cf7e638d824e5dbb8fc0d7468c95aa';
 var cur='';
 
-// ===== QR via qrcode-generator (local, no API call) =====
+// ===== QR via qrcode-generator =====
 function showQR(text){
   var c=$('qrCanvas');c.innerHTML='';
   try{
     var qr=qrcode(0,'M');
     qr.addData(text);
     qr.make();
-    c.innerHTML=qr.createImgTag(6,8);
+    c.innerHTML=qr.createImgTag(4,4);
     var img=c.querySelector('img');
-    if(img)img.style.maxWidth='280px';
+    if(img){img.style.width='220px';img.style.height='auto';img.style.display='block';img.style.margin='0 auto';}
   }catch(e){
-    c.innerHTML='<div style="padding:30px;color:#EF4444">二维码生成失败：'+e.message+'</div>';
+    c.innerHTML='<div style="padding:30px;color:#EF4444">二维码生成失败</div>';
   }
 }
 
@@ -207,7 +207,9 @@ function diag(){
   var testText='Hello World 12345 ABCD abcd';
   $('qrCanvas').innerHTML='';
   var tqr=qrcode(0,'M');tqr.addData(testText);tqr.make();
-  $('qrCanvas').innerHTML=tqr.createImgTag(6,8);
+  $('qrCanvas').innerHTML=tqr.createImgTag(4,4);
+  var timg=$('qrCanvas').querySelector('img');
+  if(timg){timg.style.width='220px';timg.style.height='auto';timg.style.display='block';timg.style.margin='0 auto';}
   d.innerHTML='<b>扫码枪诊断</b><br><br>'
     +'1. 上面已换成 <b>纯英文</b> 测试码<br>'
     +'   预期输出：<b>Hello World 12345 ABCD abcd</b><br>'
