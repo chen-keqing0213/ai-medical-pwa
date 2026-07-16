@@ -181,14 +181,13 @@ function showTestQR(){
   return test;
 }
 
-// ===== Show result area (without QR yet) =====
+// ===== Show result =====
 function show(text){
   cur=text;$('recordText').textContent=text;
   $('resultArea').classList.add('show');
   $('formCard').style.display='none';$('genBtn').style.display='none';
   document.querySelector('.voice-wrap').style.display='none';
-  // QR placeholder
-  $('qrCanvas').innerHTML='<div style=\"padding:40px;color:#94A3B8;font-size:14px\">⏳ 文本生成中，二维码稍后显示...</div>';
+  showQR(text);
   window.scrollTo(0,0);
 }
 
@@ -198,11 +197,13 @@ function go(){
   if(!f.a&&!f.b&&!f.c&&!f.d){T('请至少填写一项信息');return;}
   var btn=$('genBtn');btn.disabled=true;btn.textContent='生成中...';
 
-  // Show local text immediately (QR waits for AI)
-  show(build(f));
+  // Show local text + QR immediately, AI updates text only
+  var localText=build(f);
+  cur=localText;
+  show(localText);
   btn.disabled=false;btn.textContent='✨ 生成首次病程记录';
 
-  // Try AI upgrade then show QR
+  // AI upgrades text in background, QR stays unchanged
   var sum='主诉：'+(f.a||'无')+'\n重要发现：'+(f.b||'无')+'\n诊断：'+(f.c||'无')+'\n计划：'+(f.d||'无');
   var xhr=new XMLHttpRequest();
   xhr.open('POST','https://api.deepseek.com/v1/chat/completions');
@@ -210,11 +211,7 @@ function go(){
   xhr.setRequestHeader('Authorization','Bearer '+DSK);
   xhr.onload=function(){
     if(xhr.status===200){try{var d=JSON.parse(xhr.responseText);if(d.choices&&d.choices[0]){cur=d.choices[0].message.content.trim()+'\n\n※ AI生成草稿，请医师审核修改后使用';$('recordText').textContent=cur;}}catch(e){}}
-    showQR(cur);
   };
-  xhr.onerror=function(){showQR(cur);};
-  // Fallback: show QR after 8s even if AI doesn't respond
-  setTimeout(function(){if($('qrCanvas').textContent.trim().indexOf('⏳')===0)showQR(cur);},8000);
   xhr.send(JSON.stringify({model:'deepseek-chat',messages:[{role:'system',content:'你是经验丰富的中国临床医师。请生成规范的「首次病程记录」。结构：一、病例特点（主诉、现病史、既往史、体格检查、辅助检查）二、拟诊讨论（初步诊断、诊断依据、鉴别诊断）三、诊疗计划（检查计划、治疗计划）。专业术语，符合规范。缺失标注【待补充】。'},{role:'user',content:'患者信息：\n'+sum}],temperature:0.3,max_tokens:1200}));
 }
 
