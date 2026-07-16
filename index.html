@@ -86,7 +86,9 @@ h1{font-size:22px;text-align:center;margin:12px 0 4px;color:#2563EB}
     <div class="qr-box">
       <div class="qr-hint">📟 扫码枪扫此二维码 → 文本自动录入EMR</div>
       <div id="qrCanvas"></div>
-      <div class="qr-tip">🔫 USB扫码枪即插即用，无需驱动</div>
+      <div class="qr-tip" style="margin-bottom:8px">🔫 USB扫码枪即插即用，无需驱动</div>
+      <button class="btn-white" onclick="diag()" style="font-size:13px;padding:8px;margin-top:0">🔧 扫码乱码？点此诊断</button>
+      <div id="diagBox" style="display:none;margin-top:10px;padding:10px;background:#FFFBEB;border-radius:10px;font-size:13px;text-align:left"></div>
     </div>
     <div class="record" id="recordText"></div>
   </div>
@@ -167,6 +169,18 @@ function showQR(text){
   img.src='https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=8&data='+encodeURIComponent(text);
 }
 
+// Test QR with pure ASCII
+function showTestQR(){
+  var test='Hello World 12345';
+  var c=$('qrCanvas');c.innerHTML='';
+  var cv=document.createElement('canvas');cv.width=cv.height=300;c.appendChild(cv);
+  var ctx=cv.getContext('2d');ctx.fillStyle='#FFF';ctx.fillRect(0,0,300,300);
+  var img=document.createElement('img');
+  img.onload=function(){ctx.drawImage(img,0,0,300,300);};
+  img.src='https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=8&data='+test;
+  return test;
+}
+
 // ===== Show =====
 function show(text){
   cur=text;$('recordText').textContent=text;
@@ -196,6 +210,21 @@ function go(){
     if(xhr.status===200){try{var d=JSON.parse(xhr.responseText);if(d.choices&&d.choices[0]){cur=d.choices[0].message.content.trim()+'\n\n※ AI生成草稿，请医师审核修改后使用';$('recordText').textContent=cur;showQR(cur);}}catch(e){}}
   };
   xhr.send(JSON.stringify({model:'deepseek-chat',messages:[{role:'system',content:'你是经验丰富的中国临床医师。请生成规范的「首次病程记录」。结构：一、病例特点（主诉、现病史、既往史、体格检查、辅助检查）二、拟诊讨论（初步诊断、诊断依据、鉴别诊断）三、诊疗计划（检查计划、治疗计划）。专业术语，符合规范。缺失标注【待补充】。'},{role:'user',content:'患者信息：\n'+sum}],temperature:0.3,max_tokens:1200}));
+}
+
+function diag(){
+  var d=$('diagBox');d.style.display='block';
+  // Show test QR
+  var testText=showTestQR();
+  d.innerHTML='<b>诊断步骤：</b><br><br>'
+    +'1. 先用扫码枪扫上面这个二维码<br>'
+    +'   预期输出：<b>Hello World 12345</b><br>'
+    +'   实际输出：______<br><br>'
+    +'2. 如果英文输出正常 → 扫码枪不支持中文<br>'
+    +'   ✅ 解法：翻看扫码枪说明书，找「UTF-8 模式」或「中文模式」设置码<br><br>'
+    +'3. 如果英文也乱码 → 扫码枪本身未正确识别<br>'
+    +'   ✅ 解法：检查扫码枪是否即插即用、键盘布局是否为美式英文<br><br>'
+    +'📋 临时方案：优先使用 <b>「复制病历」按钮</b>，手机复制后发到电脑。';
 }
 
 function cp(){navigator.clipboard.writeText(cur).then(function(){T('已复制')}).catch(function(){T('复制失败')});}
