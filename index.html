@@ -94,7 +94,7 @@ h1{font-size:22px;text-align:center;margin:12px 0 4px;color:#2563EB}
 <div class="deco">🔒 不收集患者身份信息 · AI生成仅供参考</div>
 <div class="toast" id="toast"></div>
 
-<script src="https://cdn.bootcdn.net/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">
+<script src="https://cdn.bootcdn.net/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js">
 </script>
 <script>
 var $=function(id){return document.getElementById(id);};
@@ -102,14 +102,18 @@ var T=function(m){var e=$('toast');e.textContent=m;e.classList.add('show');setTi
 var DSK='sk-e5cf7e638d824e5dbb8fc0d7468c95aa';
 var cur='';
 
-// ===== QR via local library (qrcodejs, bootcdn) =====
-var _qrInstance=null;
+// ===== QR via qrcode-generator (local, no API call) =====
 function showQR(text){
   var c=$('qrCanvas');c.innerHTML='';
   try{
-    _qrInstance=new QRCode(c,{text:text,width:280,height:280,colorDark:'#000',colorLight:'#FFF',correctLevel:QRCode.CorrectLevel.M});
+    var qr=qrcode(0,'M');
+    qr.addData(text);
+    qr.make();
+    c.innerHTML=qr.createImgTag(6,8);
+    var img=c.querySelector('img');
+    if(img)img.style.maxWidth='280px';
   }catch(e){
-    c.innerHTML='<div style="padding:30px;color:#EF4444">二维码生成失败</div>';
+    c.innerHTML='<div style="padding:30px;color:#EF4444">二维码生成失败：'+e.message+'</div>';
   }
 }
 
@@ -202,7 +206,8 @@ function diag(){
   // Generate test QR with pure ASCII
   var testText='Hello World 12345 ABCD abcd';
   $('qrCanvas').innerHTML='';
-  new QRCode($('qrCanvas'),{text:testText,width:280,height:280,colorDark:'#000',colorLight:'#FFF',correctLevel:QRCode.CorrectLevel.M});
+  var tqr=qrcode(0,'M');tqr.addData(testText);tqr.make();
+  $('qrCanvas').innerHTML=tqr.createImgTag(6,8);
   d.innerHTML='<b>扫码枪诊断</b><br><br>'
     +'1. 上面已换成 <b>纯英文</b> 测试码<br>'
     +'   预期输出：<b>Hello World 12345 ABCD abcd</b><br>'
